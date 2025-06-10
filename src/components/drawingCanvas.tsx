@@ -1,32 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, use, useEffect } from 'react';
 import { View, Button, GestureResponderEvent } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
-
-//cac cong cu chinh
-type ShapeType = 'pen' | 'line' | 'rectangle' | 'circle';
-
-//cac doi tuong ve hinh
-interface Point {
-  x: number;
-  y: number;
-}
-
-interface FreehandShape {
-  type: 'pen';
-  path: any; // SkPath
-}
-
-interface RectShape {
-  type: 'rectangle' | 'line' | 'circle';
-  start: Point;
-  end: Point;
-}
-
-type Shape = FreehandShape | RectShape;
+import type { Shape, ShapeType, Point } from '../types'; // Các công cụ chính
+import { saveDraw, loadDraw } from '../services/drawService'; // Dịch vụ lưu trữ và tải hình vẽ
 
 
 // xu ly su kien ve hinh
 export default function DrawingCanvas() {
+  const userId = "user_002";  // tạm thời, sau này lấy từ auth
+  const drawId = "draw003";
     //su dung useState de quan ly trang thai ve hinh
   const [tool, setTool] = useState<ShapeType>('pen');
   const [shapes, setShapes] = useState<Shape[]>([]);
@@ -34,16 +16,27 @@ export default function DrawingCanvas() {
 
   // su dung useRef de luu tru duong ve hien tai
   const currentPath = useRef(Skia.Path.Make());
+  const pointsRef = useRef<Point[]>([]); // Lưu lại toàn bộ điểm mà pen đã đi qua 
   const start = useRef<Point>({ x: 0, y: 0 });
   const end = useRef<Point>({ x: 0, y: 0 });
     // xu ly su kien bat dau, di chuyen va ket thuc ve hinh
+
+  useEffect(() => {
+    async function fetchDraw() {
+      const loadedShapes = await loadDraw(userId, drawId);
+      setShapes(loadedShapes);
+    };
+    fetchDraw();
+  }, []);
+  
   const handleStart = (e: GestureResponderEvent) => {
     const { locationX: x, locationY: y } = e.nativeEvent;
     if (tool === 'pen') {
       const path = Skia.Path.Make();
       path.moveTo(x, y);
       currentPath.current = path;
-      setDrawingShape({ type: 'pen', path });
+      pointsRef.current = [{x, y}]; 
+      setDrawingShape({ type: 'pen', path, points: [{x, y}] });
     } else {
       start.current = { x, y };
       end.current = { x, y };
@@ -56,20 +49,23 @@ export default function DrawingCanvas() {
     if (!drawingShape) return;
     if (tool === 'pen') {
       currentPath.current.lineTo(x, y);
-      setDrawingShape({ type: 'pen', path: currentPath.current.copy() });
+      pointsRef.current.push({x, y}); // mỗi lần tay di chuyển qua điểm nào thì lưu lại điểm đó 
+      setDrawingShape({ type: 'pen', path: currentPath.current.copy(), points: pointsRef.current });
     } else {
       end.current = { x, y };
       setDrawingShape({ type: tool, start: { ...start.current }, end: { ...end.current } });
     }
   };
 
-  const handleEnd = () => {
+  const handleEnd = async () => {
     if (drawingShape) {
       setShapes((prev) => [...prev, drawingShape]);
+      await saveDraw(userId, drawId, [...shapes, drawingShape]); // Lưu hình vẽ
     }
     setDrawingShape(null);
     if (tool === 'pen') {
       currentPath.current = Skia.Path.Make(); // reset
+      pointsRef.current = []; // reset điểm pen
     }
   };
   // render hinh ve theo loai 

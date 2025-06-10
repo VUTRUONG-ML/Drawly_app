@@ -1,5 +1,3 @@
-// /src/types.ts
-
 import type { SkPath } from '@shopify/react-native-skia';
 
 export type ShapeType = 'pen' | 'line' | 'rectangle' | 'circle';
@@ -11,8 +9,8 @@ export interface Point {
 
 export interface FreehandShape {
   type: 'pen';
-  path: any;
-  points: Point[];  // để lưu JSON dễ hơn
+  path: SkPath;
+  points: Point[];  // để lưu các điểm mà pen đi qua rồi chuyển qua json dễ hơn 
 }
 
 export interface RectShape {
