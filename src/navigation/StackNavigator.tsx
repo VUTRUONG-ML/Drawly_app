@@ -6,13 +6,14 @@ import HomeScreen from '../screens/HomeScreen';
 import DrawScreen from '../screens/DrawScreen';
 import GalleryScreen from '../screens/GalleryScreen';
 
+
 const Stack = createNativeStackNavigator();
 
 export default function StackNavigator() {
   return (
     <NavigationContainer>
       <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <Stack.Screen name="LoginScreen" component={LoginScreen} />
         <Stack.Screen name="Register" component={RegisterScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Draw" component={DrawScreen} />

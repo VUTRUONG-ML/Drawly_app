@@ -1,11 +1,73 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+// import { auth } from '../screens/login/firebaseConfig'; // Cập nhật nếu cần
 
-const LoginScreen = () => {
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+} from 'react-native';
+
+
+const LoginScreen = ({ navigation }: any) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+    if (!email || !password) {
+      Alert.alert('Thông báo', 'Vui lòng nhập email và mật khẩu');
+      return;
+    }
+
+    signInWithEmailAndPassword(auth, email, password)
+      .then(() => {
+        navigation.replace('Home');
+      })
+      .catch((error) => {
+        Alert.alert('Đăng nhập thất bại', error.message);
+      });
+  };
+
   return (
-    <View style={styles.container}>
-      <Text>Login Screen</Text>
-    </View>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      style={styles.container}
+    >
+      <Text style={styles.title}>Đăng nhập tài khoản</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="#888"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        value={email}
+        onChangeText={setEmail}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Mật khẩu"
+        placeholderTextColor="#888"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
+
+      <View style={styles.buttonContainer}>
+        <Button title="Đăng nhập" onPress={handleLogin} color="#007bff" />
+      </View>
+
+      <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+        <Text style={styles.registerLink}>Chưa có tài khoản? Đăng ký</Text>
+      </TouchableOpacity>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -14,7 +76,34 @@ export default LoginScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#fff',
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 32,
+    color: '#333',
+  },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    padding: 14,
+    marginBottom: 16,
+    fontSize: 16,
+  },
+  buttonContainer: {
+    width: '100%',
+    marginTop: 10,
+  },
+  registerLink: {
+    marginTop: 20,
+    color: '#007bff',
+    textDecorationLine: 'underline',
+    fontSize: 14,
   },
 });
