@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-// import { auth } from '../screens/login/firebaseConfig'; // Cập nhật đường dẫn nếu khác
+import { registerUser } from '../services/authService';
 import {
   View,
   Text,
@@ -19,7 +18,7 @@ const RegisterScreen = ({ navigation }: any) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
       Alert.alert('Thông báo', 'Vui lòng nhập đầy đủ thông tin');
       return;
@@ -30,20 +29,15 @@ const RegisterScreen = ({ navigation }: any) => {
       return;
     }
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then(() => {
-        Alert.alert('Thành công', 'Đăng ký thành công');
-        navigation.replace('Home');
-      })
-      .catch((error) => {
-        let msg = 'Đăng ký thất bại';
-        if (error.code === 'auth/email-already-in-use') {
-          msg = 'Email đã được sử dụng';
-        } else if (error.code === 'auth/weak-password') {
-          msg = 'Mật khẩu quá yếu (ít nhất 6 ký tự)';
-        }
-        Alert.alert('Lỗi', msg);
-      });
+    try{
+      const user = await registerUser(email, password);
+      navigation.navigate('LoginScreen'); // Navigate to Main screen after successful login
+    }
+    catch (error: any) {
+      console.log("Lỗi đăng ký:", error);
+      Alert.alert('Lỗi đăng ký', `Vui lòng kiểm tra lại email và mật khẩu của bạn.`);
+      return;
+    }
   };
 
   return (
@@ -92,7 +86,6 @@ const RegisterScreen = ({ navigation }: any) => {
   );
 };
 
-export default RegisterScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -101,6 +94,18 @@ const styles = StyleSheet.create({
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  button: {
+    backgroundColor: '#1E90FF',
+    paddingVertical: 15,
+    paddingHorizontal: 40,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   title: {
     fontSize: 24,
@@ -127,3 +132,5 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
+
+export default RegisterScreen;

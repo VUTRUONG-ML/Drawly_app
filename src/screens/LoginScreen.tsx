@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-// import { auth } from '../screens/login/firebaseConfig'; // Cập nhật nếu cần
-
+import { loginUser } from '../services/authService';
 import {
   View,
   Text,
@@ -19,19 +17,20 @@ const LoginScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert('Thông báo', 'Vui lòng nhập email và mật khẩu');
       return;
     }
 
-    signInWithEmailAndPassword(auth, email, password)
-      .then(() => {
-        navigation.replace('Home');
-      })
-      .catch((error) => {
-        Alert.alert('Đăng nhập thất bại', error.message);
-      });
+    try{
+      const user = await loginUser(email, password);
+      navigation.navigate('Draw'); // Navigate to Main screen after successful login
+    }
+    catch (error: any) {
+      console.log("Lỗi đăng nhập:", error);
+      Alert.alert('Lỗi đăng nhập', `Vui lòng kiểm tra lại email và mật khẩu của bạn.`);
+    }
   };
 
   return (
@@ -71,7 +70,6 @@ const LoginScreen = ({ navigation }: any) => {
   );
 };
 
-export default LoginScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -107,3 +105,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 });
+
+export default LoginScreen;
