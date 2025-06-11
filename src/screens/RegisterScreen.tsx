@@ -85,7 +85,7 @@ const RegisterScreen = ({ navigation }: any) => {
         <Button title="Đăng ký" onPress={handleRegister} color="#28a745" />
       </View>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+      <TouchableOpacity onPress={() => navigation.navigate('LoginScreen')}>
         <Text style={styles.loginLink}>Đã có tài khoản? Đăng nhập</Text>
       </TouchableOpacity>
     </KeyboardAvoidingView>
