@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { loginUser } from '../services/authService';
+import { useAuth } from '../context/AuthContext';
 import {
   View,
   Text,
@@ -16,6 +17,7 @@ import {
 const LoginScreen = ({ navigation }: any) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const { login } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -25,7 +27,7 @@ const LoginScreen = ({ navigation }: any) => {
 
     try{
       const user = await loginUser(email, password);
-      navigation.navigate('Draw'); // Navigate to Main screen after successful login
+      login();
     }
     catch (error: any) {
       console.log("Lỗi đăng nhập:", error);

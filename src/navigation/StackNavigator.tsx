@@ -5,20 +5,38 @@ import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import DrawScreen from '../screens/DrawScreen';
 import GalleryScreen from '../screens/GalleryScreen';
-
+import { AuthProvider, useAuth } from '../context/AuthContext'; // tạo ở bước 1
+import { useEffect } from 'react';
 
 const Stack = createNativeStackNavigator();
 
+function AppNavigator() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <Stack.Navigator initialRouteName={isAuthenticated ? 'Draw' : 'Login'}>
+      {!isAuthenticated ? (
+        <>
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+        </>
+      ) : (
+        <>
+          <Stack.Screen name="Home" component={HomeScreen} />
+          <Stack.Screen name="Draw" component={DrawScreen} />
+          <Stack.Screen name="Gallery" component={GalleryScreen} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
+}
+
 export default function StackNavigator() {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Home">
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="Draw" component={DrawScreen} />
-        <Stack.Screen name="Gallery" component={GalleryScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <AuthProvider>
+      <NavigationContainer>
+        <AppNavigator />
+      </NavigationContainer>
+    </AuthProvider>
   );
 }
