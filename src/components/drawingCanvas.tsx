@@ -7,8 +7,10 @@ import { saveDraw, loadDraw } from '../services/drawService'; // Dịch vụ lư
 
 // xu ly su kien ve hinh
 export default function DrawingCanvas() {
-  const userId = "user_002";  // tạm thời, sau này lấy từ auth
-  const drawId = "draw003";
+  const userId = "user1021";  // tạm thời, sau này lấy từ auth
+  const drawId = "draw01212";
+  const drawName = "TestDraw";
+  const email = "abc@gmail.com";
     //su dung useState de quan ly trang thai ve hinh
   const [tool, setTool] = useState<ShapeType>('pen');
   const [shapes, setShapes] = useState<Shape[]>([]);
@@ -60,7 +62,7 @@ export default function DrawingCanvas() {
   const handleEnd = async () => {
     if (drawingShape) {
       setShapes((prev) => [...prev, drawingShape]);
-      await saveDraw(userId, drawId, [...shapes, drawingShape]); // Lưu hình vẽ
+      await saveDraw(userId, drawId,drawName, [...shapes, drawingShape], null, email); // Lưu hình vẽ
     }
     setDrawingShape(null);
     if (tool === 'pen') {
