@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { View, Text, StyleSheet } from 'react-native';
 import DrawingCanvas from '../components/drawingCanvas';
 import { Skia } from '@shopify/react-native-skia';

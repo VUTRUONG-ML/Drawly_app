@@ -6,6 +6,7 @@ import HomeScreen from '../screens/HomeScreen';
 import DrawScreen from '../screens/DrawScreen';
 import GalleryScreen from '../screens/GalleryScreen';
 
+
 const Stack = createNativeStackNavigator();
 
 export default function StackNavigator() {
