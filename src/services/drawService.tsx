@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, Timestamp, query, where  } from "firebase/firestore"; 
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, Timestamp, query, where, collection, getDocs   } from "firebase/firestore"; 
 import { db } from './firebase';
 import { shapeToJSON, jsonToShape } from '../utils/shapeConverter';
 import type { Shape } from '../types';
@@ -44,4 +44,27 @@ export async function loadDraw(userId: string, drawId: string): Promise<Shape[]>
     }
   }
   return [];
+}
+
+export async function getDrawsByUser(userId: string): Promise<{ drawId: string, drawName: string }[]> {
+  try {
+    const drawsRef = collection(db, "Draws");
+    const q = query(drawsRef, where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+
+    const result: { drawId: string, drawName: string }[] = [];
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      result.push({
+        drawId: doc.id,
+        drawName: data.drawName,
+      });
+    });
+
+    return result;
+  } catch (error) {
+    console.error("Lỗi khi lấy danh sách Draws:", error);
+    return [];
+  }
 }

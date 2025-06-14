@@ -8,7 +8,7 @@ import { saveDraw, loadDraw } from '../services/drawService'; // Dịch vụ lư
 // xu ly su kien ve hinh
 export default function DrawingCanvas() {
   const userId = "user1021";  // tạm thời, sau này lấy từ auth
-  const drawId = "draw01212";
+  const drawId = "draw011";
   const drawName = "TestDraw";
   const email = "abc@gmail.com";
     //su dung useState de quan ly trang thai ve hinh
