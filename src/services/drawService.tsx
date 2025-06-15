@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, Timestamp, query, where, collection, getDocs   } from "firebase/firestore"; 
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, Timestamp, query, where, collection, getDocs, deleteDoc, arrayRemove   } from "firebase/firestore"; 
 import { db } from './firebase';
 import { shapeToJSON, jsonToShape } from '../utils/shapeConverter';
 import type { Shape } from '../types';
@@ -49,6 +49,25 @@ export async function updateDraw(
     updatedAt: Timestamp.now(),
   });
 
+}
+
+export async function deleteDraw(drawId: string, userId: string) {
+  const drawDocRef = doc(db, 'Draws', drawId);
+  await deleteDoc(drawDocRef);
+
+  const userRef = doc(db, 'Users', userId);
+  
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+    // Nếu có, thì xoá drawId khỏi drawIds
+    await updateDoc(userRef, {
+      drawIds: arrayRemove(drawId),
+    });
+  } else {
+    console.warn(`⚠️ User với ID ${userId} chưa tồn tại trong Users collection.`);
+    // (Không làm gì thêm hoặc tuỳ bạn muốn tạo document trống hay báo lỗi)
+  }
 }
 
 

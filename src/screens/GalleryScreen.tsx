@@ -9,12 +9,14 @@ import {
   Modal,
   TextInput,
   Button,
+  ToastAndroid,
+  Alert,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { getDrawsByUser, saveDraw } from '../services/drawService';
+import { deleteDraw, getDrawsByUser, saveDraw } from '../services/drawService';
 import uuid from 'react-native-uuid';
 import { useFocusEffect } from '@react-navigation/native';
-
+import Entypo from '@expo/vector-icons/Entypo';
 type Draw = {
   drawId: string;
   drawName: string;
@@ -78,6 +80,34 @@ const GalleryScreen = ({ navigation }: any) => {
   const handleOpenDraw = (drawId: string, drawName: string) => {
     navigation.navigate('Draw', { drawId, drawName });
   };
+  const handleDelete = async (drawId: string) => {
+    if (!userId) return;
+    Alert.alert(
+      'Xoá bản vẽ',
+      'Bạn có chắc chắn muốn xoá bản vẽ này?',
+      [
+        {
+          text: 'Huỷ',
+          style: 'cancel',
+        },
+        {
+          text: 'Xoá',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteDraw(drawId, userId);
+              setDraws((prev) => prev.filter((d) => d.drawId !== drawId));
+              ToastAndroid.show('🗑 Đã xoá thành công!', ToastAndroid.SHORT);
+            } catch (error) {
+              console.error('❌ Lỗi khi xoá bản vẽ:', error);
+            }
+          },
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+  
 
   const renderItem = ({ item }: { item: Draw & { thumbnailUrl: string } }) => (
     <TouchableOpacity
@@ -86,7 +116,15 @@ const GalleryScreen = ({ navigation }: any) => {
     >
       <Image source={{ uri: item.thumbnailUrl }} style={styles.image} />
       <Text style={styles.name}>{item.drawName}</Text>
+
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDelete(item.drawId)}
+      >
+        <Entypo name="trash" size={24} color="black" />
+      </TouchableOpacity>
     </TouchableOpacity>
+
   );
 
   return (
@@ -204,5 +242,21 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 16,
   },
+  deleteButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    backgroundColor: '#ffcccc',
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    zIndex: 1,
+  },
+  deleteText: {
+    fontSize: 14,
+    color: '#900',
+    fontWeight: 'bold',
+  },
+  
 
 });
