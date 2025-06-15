@@ -26,8 +26,8 @@ const LoginScreen = ({ navigation }: any) => {
     }
 
     try{
-      const user = await loginUser(email, password);
-      login();
+      const uid = await loginUser(email, password);
+      login(uid);
     }
     catch (error: any) {
       console.log("Lỗi đăng nhập:", error);

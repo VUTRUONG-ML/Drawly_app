@@ -7,14 +7,23 @@ import DrawScreen from '../screens/DrawScreen';
 import GalleryScreen from '../screens/GalleryScreen';
 import { AuthProvider, useAuth } from '../context/AuthContext'; // tạo ở bước 1
 import { useEffect } from 'react';
+import { View, Text, Button } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 
 function AppNavigator() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
+  
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text>Đang kiểm tra đăng nhập...</Text>
+      </View>
+    );
+  }
 
   return (
-    <Stack.Navigator initialRouteName={isAuthenticated ? 'Draw' : 'Login'}>
+    <Stack.Navigator initialRouteName={isAuthenticated ? 'Home' : 'Login'}>
       {!isAuthenticated ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />

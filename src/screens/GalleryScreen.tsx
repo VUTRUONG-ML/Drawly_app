@@ -1,7 +1,8 @@
 import React, { use, useEffect, useState } from 'react';
 
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Pressable } from 'react-native';
 import { getDrawsByUser } from '../services/drawService';
+import { useAuth } from '../context/AuthContext';
 
 type Draw = {
   drawId: string;
@@ -9,10 +10,11 @@ type Draw = {
 };
 
 const GalleryScreen = () => {
-  const userId = "user1021";
+  const { userId, loading } = useAuth(); 
 
   const [nameDraws, setNameDraws] = useState<Draw[]>([]);
   useEffect(() => {
+    if (loading || !userId) return;
     const fetchDraws = async () =>{
       try {
         const draws = await getDrawsByUser(userId);
@@ -23,18 +25,23 @@ const GalleryScreen = () => {
       }
     }
     fetchDraws();
-  }, [])
+  }, [loading, userId])
 
   return (
     <View style={styles.container}>
+      
       <FlatList
         data={nameDraws}
         keyExtractor={(item) => item.drawId}
         renderItem={({item}) =>{
           return (
-            <View style = { styles.item }>
-              <Text>{item.drawName}</Text>
-            </View>
+            <Pressable 
+              style = {({pressed}) => ({opacity: pressed ? 0.5 : 1})}
+              >
+              <View style = { styles.item }>
+                <Text>{item.drawName}</Text>
+              </View>
+            </Pressable>
           );
         }}
       />

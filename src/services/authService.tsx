@@ -8,5 +8,6 @@ export const registerUser = async (email: string, password: string) => {
 
 export const loginUser = async (email: string, password: string) => {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  return auth.currentUser;
+  const uid = userCredential.user.uid;
+  return uid;
 };

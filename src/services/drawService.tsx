@@ -5,7 +5,7 @@ import type { Shape } from '../types';
 
 
 export async function saveDraw(
-  userId: string,
+  userId: string ,
   drawId: string,
   drawName: string,
   drawData: Shape[],
@@ -34,7 +34,7 @@ export async function saveDraw(
 }
 
 
-export async function loadDraw(userId: string, drawId: string): Promise<Shape[]> {
+export async function loadDraw(userId: string | null, drawId: string): Promise<Shape[]> {
   const drawDocRef = doc(db, 'Draws', drawId);
   const docSnap = await getDoc(drawDocRef);
   if (docSnap.exists()) {

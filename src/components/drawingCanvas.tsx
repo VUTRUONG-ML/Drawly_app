@@ -3,13 +3,13 @@ import { View, Button, GestureResponderEvent } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import type { Shape, ShapeType, Point } from '../types'; // Các công cụ chính
 import { saveDraw, loadDraw } from '../services/drawService'; // Dịch vụ lưu trữ và tải hình vẽ
-
+import { useAuth } from '../context/AuthContext';
 
 // xu ly su kien ve hinh
 export default function DrawingCanvas() {
-  const userId = "user1021";  // tạm thời, sau này lấy từ auth
-  const drawId = "draw011";
-  const drawName = "TestDraw";
+  const { userId, loading } = useAuth();  
+  const drawId = "draw011111";
+  const drawName = "TestDraw1111";
   const email = "abc@gmail.com";
     //su dung useState de quan ly trang thai ve hinh
   const [tool, setTool] = useState<ShapeType>('pen');
@@ -24,12 +24,14 @@ export default function DrawingCanvas() {
     // xu ly su kien bat dau, di chuyen va ket thuc ve hinh
 
   useEffect(() => {
+    if (loading || !userId) return;
     async function fetchDraw() {
       const loadedShapes = await loadDraw(userId, drawId);
       setShapes(loadedShapes);
     };
     fetchDraw();
-  }, []);
+  }, [loading, userId]);
+
   
   const handleStart = (e: GestureResponderEvent) => {
     const { locationX: x, locationY: y } = e.nativeEvent;
@@ -62,7 +64,9 @@ export default function DrawingCanvas() {
   const handleEnd = async () => {
     if (drawingShape) {
       setShapes((prev) => [...prev, drawingShape]);
-      await saveDraw(userId, drawId,drawName, [...shapes, drawingShape], null, email); // Lưu hình vẽ
+      if(userId){
+        await saveDraw(userId, drawId,drawName, [...shapes, drawingShape], null, email); // Lưu hình vẽ
+      }
     }
     setDrawingShape(null);
     if (tool === 'pen') {
