@@ -11,7 +11,7 @@ export default function HomeScreen({ navigation }: any) {
         </View>
       )}
       <Text>Home Screen</Text>
-      <Button title="Go to Draw" onPress={() => navigation.navigate('Draw')} />
+      {/* <Button title="Go to Draw" onPress={() => navigation.navigate('Draw')} /> */}
       <Button title="Go to Gallery" onPress={() => navigation.navigate('Gallery')} />
       { !isAuthenticated && (
         <>

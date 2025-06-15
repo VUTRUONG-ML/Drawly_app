@@ -2,14 +2,21 @@ import React, { useState, useRef, use, useEffect } from 'react';
 import { View, Button, GestureResponderEvent } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import type { Shape, ShapeType, Point } from '../types'; // Các công cụ chính
-import { saveDraw, loadDraw } from '../services/drawService'; // Dịch vụ lưu trữ và tải hình vẽ
+import { saveDraw, loadDraw, updateDraw } from '../services/drawService'; // Dịch vụ lưu trữ và tải hình vẽ
 import { useAuth } from '../context/AuthContext';
-
+import { useRoute, RouteProp  } from '@react-navigation/native';
+import { ToastAndroid } from 'react-native';
 // xu ly su kien ve hinh
+
+type RouteParams = {
+  drawId: string;
+  drawName: string;
+};
+
 export default function DrawingCanvas() {
+  const route = useRoute<RouteProp<Record<string, RouteParams>, string>>();
   const { userId, loading } = useAuth();  
-  const drawId = "draw011111";
-  const drawName = "TestDraw1111";
+  const { drawId, drawName } = route.params;
   const email = "abc@gmail.com";
     //su dung useState de quan ly trang thai ve hinh
   const [tool, setTool] = useState<ShapeType>('pen');
@@ -24,7 +31,7 @@ export default function DrawingCanvas() {
     // xu ly su kien bat dau, di chuyen va ket thuc ve hinh
 
   useEffect(() => {
-    if (loading || !userId) return;
+    if (loading || !userId || !drawId) return;
     async function fetchDraw() {
       const loadedShapes = await loadDraw(userId, drawId);
       setShapes(loadedShapes);
@@ -65,7 +72,7 @@ export default function DrawingCanvas() {
     if (drawingShape) {
       setShapes((prev) => [...prev, drawingShape]);
       if(userId){
-        await saveDraw(userId, drawId,drawName, [...shapes, drawingShape], null, email); // Lưu hình vẽ
+        await updateDraw(drawId,[...shapes, drawingShape], null); // Lưu hình vẽ
       }
     }
     setDrawingShape(null);
@@ -74,6 +81,17 @@ export default function DrawingCanvas() {
       pointsRef.current = []; // reset điểm pen
     }
   };
+  const handleSave = async () => {
+    console.log("Saving draw...");
+    if (loading || !userId || !drawId) return;
+    try {
+      await updateDraw(drawId,shapes, null); // Lưu hình vẽ
+      ToastAndroid.show('✅ Đã lưu thành công!', ToastAndroid.SHORT);
+      console.log("✅ Hình vẽ đã được lưu thành công!");
+    } catch (error) {
+      console.error("❌ Lỗi khi lưu hình vẽ:", error);
+    }
+  }
   // render hinh ve theo loai 
   const renderShape = (shape: Shape, index: number) => {
     switch (shape.type) {
@@ -147,12 +165,14 @@ export default function DrawingCanvas() {
                 backgroundColor: '#fff',
                 borderTopWidth: 1,
                 borderColor: '#ccc',
+                marginBottom: 30,
             }}
             >
                 <Button title="Pen" onPress={() => setTool('pen')} />
                 <Button title="Line" onPress={() => setTool('line')} />
                 <Button title="Rectangle" onPress={() => setTool('rectangle')} />
                 <Button title="Circle" onPress={() => setTool('circle')} />
+                <Button title="Save" onPress={() => handleSave()} />
             </View>
         </View>
     </View>

@@ -8,6 +8,7 @@ import GalleryScreen from '../screens/GalleryScreen';
 import { AuthProvider, useAuth } from '../context/AuthContext'; // tạo ở bước 1
 import { useEffect } from 'react';
 import { View, Text, Button } from 'react-native';
+import CreateDrawScreen from '../screens/CreateDrawScreen';
 
 const Stack = createNativeStackNavigator();
 

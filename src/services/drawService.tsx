@@ -10,7 +10,6 @@ export async function saveDraw(
   drawName: string,
   drawData: Shape[],
   imgId: string | null,
-  email: string,
 ){
   const drawDocRef = doc(db, 'Draws', drawId);
   const userDocRef = doc(db, 'Users', userId);
@@ -21,16 +20,35 @@ export async function saveDraw(
     drawName,
     drawData: shapeData,
     imgId: null,
-    userId
+    userId,
+    createdAt: Timestamp.now(),
+    updatedAt: Timestamp.now(),
   });
 
   await setDoc(userDocRef, {
     userId,
-    email,
     drawIds: arrayUnion(drawId),
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
   }, { merge: true });
+}
+
+
+export async function updateDraw(
+  drawId: string,
+  drawData: Shape[],
+  imgId: string | null,
+){
+  const drawDocRef = doc(db, 'Draws', drawId);
+
+  const shapeData = drawData.map(shapeToJSON);
+  await updateDoc(drawDocRef, {
+    drawId,
+    drawData: shapeData,
+    imgId: imgId ?? null,
+    updatedAt: Timestamp.now(),
+  });
+
 }
 
 
