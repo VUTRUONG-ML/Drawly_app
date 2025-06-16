@@ -12,6 +12,7 @@ import {
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import StrokeWidthModal from './Modal/StrokeWidthModal';
 import ColorPickModal from './Modal/ColorPickModal';
+import {Octicons} from '@expo/vector-icons';
 
 type ShapeType = 'pen' | 'eraser' | 'line' | 'rectangle' | 'circle';
 type StrokeWidth = number;
@@ -40,7 +41,11 @@ interface RectShape {
 type Shape = FreehandShape | RectShape;
 
 export default function DrawingCanvas() {
+
   const [tool, setTool] = useState<ShapeType>('pen');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [undoStack, setUndoStack] = useState<Shape[]>([]);
+  const [redoStack, setRedoStack] = useState<Shape[]>([]);
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [strokeWidth, setStrokeWidth] = useState<StrokeWidth>(5);
   const [color, setColor] = useState<Color>('rgba(0,0,0)');
@@ -202,47 +207,63 @@ export default function DrawingCanvas() {
         </Canvas>
       </View>
 
-        <View style={styles.toolbarContainer}>
+        <View style={styles.toolbarContainer}>\
+          <Button title="Undo" onPress={() => {
+            const lastShape = shapes[shapes.length - 1];
+            setRedoStack(lastShape ? [...redoStack, lastShape] : redoStack);
+            setShapes((prev) => prev.slice(0, -1))
+          } } />
+          <Button
+            title="Redo"
+            onPress={() => {
+              if (redoStack.length > 0) {
+                const lastRedo = redoStack[redoStack.length - 1];
+                setShapes((prev) => [...prev, lastRedo]);
+                setRedoStack((prev) => prev.slice(0, -1));
+              }
+            }}
+          />
           <Button title="Pen" onPress={() => setTool('pen')} />
           <Button title="Eraser" onPress={() => setTool('eraser')} />
           <Button title="Line" onPress={() => setTool('line')} />
           <Button title="Rectangle" onPress={() => setTool('rectangle')} />
           <Button title="Circle" onPress={() => setTool('circle')} />
-
+          <View>
           <TouchableOpacity
             ref={strokeBtnRef}
             onPress={() => handlePress(strokeBtnRef, setStrokeModalPos, setStrokeModalVisible)}
             style={styles.strokeWidthButton}
           >
-            <Text style={styles.strokeWidthText}>Stroke Width</Text>
+            <Text style={styles.strokeWidthText}> {strokeWidth}px</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             ref={colorBtnRef}
             onPress={() => handlePress(colorBtnRef, setColorModalPos, setColorModalVisible)}
-            style={styles.strokeWidthButton}
           >
-            <Text style={styles.strokeWidthText}>Color</Text>
+            <Octicons name = "dot-fill" size={48} color={color} />
           </TouchableOpacity>
-        </View>
-      <StrokeWidthModal
-  visible={strokeModalVisible}
-  strokeWidth={strokeWidth}
-  onChange={setStrokeWidth}
-  onClose={() => setStrokeModalVisible(false)}
-  position={strokeModalPos}
-/>
+          </View>
+       
+          <StrokeWidthModal
+            visible={strokeModalVisible}
+            strokeWidth={strokeWidth}
+            onChange={setStrokeWidth}
+            onClose={() => setStrokeModalVisible(false)}
+            position={strokeModalPos}
+          />
 
-<ColorPickModal
-  visible={colorModalVisible}
-  onSelectColor={(selectedColor) => {
-    setColor(selectedColor as Color);
-    setColorModalVisible(false);
-  }}
-  onClose={() => setColorModalVisible(false)}
-  position={colorModalPos}
-/>
-    </View>
+          <ColorPickModal
+            visible={colorModalVisible}
+            onSelectColor={(selectedColor) => {
+              setColor(selectedColor as Color);
+              setColorModalVisible(false);
+            }}
+            onClose={() => setColorModalVisible(false)}
+            position={colorModalPos}
+          />
+        </View>
+    </View> 
   );
 }
 
