@@ -11,9 +11,18 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import Slider from '@react-native-community/slider';
 import { AntDesign } from '@expo/vector-icons';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
+type StrokeWidth = number;
+
+interface line{
+  x: number;
+  y: number;
+  width: number;
+  color: string;
+}
 interface StrokeWidthModalProps {
   visible: boolean;
   strokeWidth: number;
@@ -36,13 +45,15 @@ const StrokeWidthModal: React.FC<StrokeWidthModalProps> = ({
       animationType="fade"
       onRequestClose={onClose}
     >
+      <TouchableOpacity style={styles.overlay} onPress={onClose} />
+      
       <View
         style={[
           styles.modalContainer,
           {
             position: 'absolute',
-            top: Math.min(position.y, screenHeight - 240),
-            left: Math.min(position.x, screenWidth - 320),
+            bottom: Dimensions.get('window').height - position.y ,
+            left: Dimensions.get('window').width - position.x + 20,
           },
         ]}
       >
@@ -53,7 +64,10 @@ const StrokeWidthModal: React.FC<StrokeWidthModalProps> = ({
             <AntDesign name="close" size={20} color="#333" />
           </TouchableOpacity>
         </View>
-
+        
+        <View>
+          <View style ={{borderWidth : strokeWidth / 2}}/>
+        </View>
         {/* Picker */}
         <Picker
           mode="dropdown"
@@ -61,16 +75,16 @@ const StrokeWidthModal: React.FC<StrokeWidthModalProps> = ({
           onValueChange={onChange}
           style={styles.picker}
         >
-          {[1, 3, 5, 10, 15, 20, 25].map((val) => (
+            {Array.from({ length: 100 }, (_, i) => i + 1).map((val) => (
             <Picker.Item key={val} label={`${val}px`} value={val} />
-          ))}
+            ))}
         </Picker>
-
+        
         {/* Slider */}
         <Slider
           style={styles.slider}
           minimumValue={1}
-          maximumValue={25}
+          maximumValue={99}
           step={1}
           value={strokeWidth}
           onValueChange={onChange}
@@ -86,6 +100,10 @@ const StrokeWidthModal: React.FC<StrokeWidthModalProps> = ({
 export default StrokeWidthModal;
 
 const styles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0, bottom: 0, left: 0, right: 0,
+  },
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -101,7 +119,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 10,
   },
   title: {
     fontSize: 16,

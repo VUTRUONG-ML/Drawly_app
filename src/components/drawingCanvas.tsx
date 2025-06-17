@@ -14,7 +14,7 @@ import StrokeWidthModal from './Modal/StrokeWidthModal';
 import ColorPickModal from './Modal/ColorPickModal';
 import {Octicons} from '@expo/vector-icons';
 
-type ShapeType = 'pen' | 'eraser' | 'line' | 'rectangle' | 'circle';
+type ShapeType = 'pen' | 'eraser' | 'line' | 'rectangle' | 'oval';
 type StrokeWidth = number;
 type Color = 'rgba(0,0,0)' | 'rgba(0,0,255)' | 'rgba(0,128,0)' | 'rgba(255,0,0)' | 'rgba(240,240,240)';
 
@@ -30,21 +30,22 @@ interface FreehandShape {
   color?: Color;
 }
 
-interface RectShape {
-  type: 'rectangle' | 'line' | 'circle';
+interface BasicShape {
+  type: 'rectangle' | 'line' | 'oval';
   start: Point;
   end: Point;
   strokeWidth: number;
   color?: Color;
 }
 
-type Shape = FreehandShape | RectShape;
+
+
+type Shape = FreehandShape | BasicShape ;
 
 export default function DrawingCanvas() {
 
   const [tool, setTool] = useState<ShapeType>('pen');
   const [isDrawing, setIsDrawing] = useState(false);
-  const [undoStack, setUndoStack] = useState<Shape[]>([]);
   const [redoStack, setRedoStack] = useState<Shape[]>([]);
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [strokeWidth, setStrokeWidth] = useState<StrokeWidth>(5);
@@ -62,6 +63,7 @@ export default function DrawingCanvas() {
   const end = useRef<Point>({ x: 0, y: 0 });
 
   const handleStart = (e: GestureResponderEvent) => {
+    if (!isDrawing) return; // Prevent starting a new shape while drawing
     const { locationX: x, locationY: y } = e.nativeEvent;
     if (tool === 'pen' || tool === 'eraser') {
       const path = Skia.Path.Make();
@@ -76,6 +78,7 @@ export default function DrawingCanvas() {
   };
 
   const handleMove = (e: GestureResponderEvent) => {
+    if (!isDrawing) return;
     const { locationX: x, locationY: y } = e.nativeEvent;
     if (!drawingShape) return;
     if (tool === 'pen' || tool === 'eraser') {
@@ -94,6 +97,7 @@ export default function DrawingCanvas() {
   };
 
   const handleEnd = () => {
+    if (!isDrawing) return;
     if (drawingShape) {
       setShapes((prev) => [...prev, drawingShape]);
     }
@@ -114,7 +118,7 @@ export default function DrawingCanvas() {
     });
   }
 };
-
+  
   const renderShape = (shape: Shape, index: number) => {
     switch (shape.type) {
       case 'pen':
@@ -170,11 +174,15 @@ export default function DrawingCanvas() {
           />
         );
       }
-      case 'circle': {
+      case 'oval': {
         const { start, end } = shape;
-        const radius = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2);
         const path = Skia.Path.Make();
-        path.addCircle(start.x, start.y, radius);
+        path.addOval({
+        x: Math.min(start.x, end.x),
+        y: Math.min(start.y, end.y),
+        width: Math.abs(end.x - start.x),
+        height: Math.abs(end.y - start.y),
+        });
         return (
           <Path
             key={index}
@@ -207,62 +215,75 @@ export default function DrawingCanvas() {
         </Canvas>
       </View>
 
-        <View style={styles.toolbarContainer}>\
-          <Button title="Undo" onPress={() => {
+        <View style={styles.toolbarContainer}>
+        {[
+          { label: 'Undo', disabled: shapes.length === 0, onPress: () => {
+            if (shapes.length === 0) return;
+            setIsDrawing(false);
             const lastShape = shapes[shapes.length - 1];
             setRedoStack(lastShape ? [...redoStack, lastShape] : redoStack);
-            setShapes((prev) => prev.slice(0, -1))
-          } } />
-          <Button
-            title="Redo"
-            onPress={() => {
-              if (redoStack.length > 0) {
-                const lastRedo = redoStack[redoStack.length - 1];
-                setShapes((prev) => [...prev, lastRedo]);
-                setRedoStack((prev) => prev.slice(0, -1));
-              }
-            }}
-          />
-          <Button title="Pen" onPress={() => setTool('pen')} />
-          <Button title="Eraser" onPress={() => setTool('eraser')} />
-          <Button title="Line" onPress={() => setTool('line')} />
-          <Button title="Rectangle" onPress={() => setTool('rectangle')} />
-          <Button title="Circle" onPress={() => setTool('circle')} />
-          <View>
+            setShapes(prev => prev.slice(0, -1));
+          }},
+          { label: 'Redo', disabled: redoStack.length === 0, onPress: () => {
+            setIsDrawing(false);
+            if (redoStack.length > 0) {
+              const lastRedo = redoStack[redoStack.length - 1];
+              setShapes(prev => [...prev, lastRedo]);
+              setRedoStack(prev => prev.slice(0, -1));
+            }
+          }},
+          { label: 'Pen', onPress: () => { setTool('pen'); setIsDrawing(true); } },
+          { label: 'Eraser', onPress: () => { setTool('eraser'); setIsDrawing(true); } },
+          { label: 'Line', onPress: () => { setTool('line'); setIsDrawing(true); } },
+          { label: 'Rectangle', onPress: () => { setTool('rectangle'); setIsDrawing(true); } },
+          { label: 'oval', onPress: () => { setTool('oval'); setIsDrawing(true); } },
+        ].map(({ label, disabled, onPress }) => (
+          <TouchableOpacity
+            key={label}
+            onPress={onPress}
+            disabled={disabled}
+            style={[styles.toolButton, disabled && styles.disabledButton]}
+          >
+            <Text style={styles.toolButtonText}>{label}</Text>
+          </TouchableOpacity>
+        ))}
+
+        <View>
           <TouchableOpacity
             ref={strokeBtnRef}
             onPress={() => handlePress(strokeBtnRef, setStrokeModalPos, setStrokeModalVisible)}
             style={styles.strokeWidthButton}
           >
-            <Text style={styles.strokeWidthText}> {strokeWidth}px</Text>
+            <Text style={styles.strokeWidthText}>{strokeWidth}px</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             ref={colorBtnRef}
             onPress={() => handlePress(colorBtnRef, setColorModalPos, setColorModalVisible)}
+            style = {[styles.toolButton, { alignItems : 'center',justifyContent : 'center'}]}
           >
-            <Octicons name = "dot-fill" size={48} color={color} />
+            <View style={[styles.outerCircle, {backgroundColor: color}]}/>
           </TouchableOpacity>
-          </View>
-       
-          <StrokeWidthModal
-            visible={strokeModalVisible}
-            strokeWidth={strokeWidth}
-            onChange={setStrokeWidth}
-            onClose={() => setStrokeModalVisible(false)}
-            position={strokeModalPos}
-          />
-
-          <ColorPickModal
-            visible={colorModalVisible}
-            onSelectColor={(selectedColor) => {
-              setColor(selectedColor as Color);
-              setColorModalVisible(false);
-            }}
-            onClose={() => setColorModalVisible(false)}
-            position={colorModalPos}
-          />
         </View>
+
+        <StrokeWidthModal
+          visible={strokeModalVisible}
+          strokeWidth={strokeWidth}
+          onChange={setStrokeWidth}
+          onClose={() => setStrokeModalVisible(false)}
+          position={strokeModalPos}
+        />
+
+        <ColorPickModal
+          visible={colorModalVisible}
+          onSelectColor={(selectedColor) => {
+            setColor(selectedColor as Color);
+            setColorModalVisible(false);
+          }}
+          onClose={() => setColorModalVisible(false)}
+          position={colorModalPos}
+        />
+      </View>
     </View> 
   );
 }
@@ -292,16 +313,33 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: '#ccc',
   },
+  toolButton: {
+    padding: 10,
+    backgroundColor: '#eee',
+    borderRadius: 8,
+    marginHorizontal: 5,
+  },
+  toolButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
   strokeWidthButton: {
+    padding: 10,
     backgroundColor: '#ddd',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    marginLeft: 5,
+    borderRadius: 8,
+    marginTop: 10,
   },
   strokeWidthText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  outerCircle: {
+    width: 25, // hoặc 30 nếu muốn viền ôm sát hơn
+    height: 25,
+    borderRadius: 12.5,
+    borderWidth: 2,
   },
 });

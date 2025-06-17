@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   View,
   TouchableOpacity,
-  Text,
   StyleSheet,
   Dimensions,
+  Text,
+  Image,
 } from 'react-native';
-import { Octicons } from '@expo/vector-icons';
+import WheelColorPicker from 'react-native-wheel-color-picker';
+
 
 interface ColorPickModalProps {
   visible: boolean;
@@ -17,17 +19,8 @@ interface ColorPickModalProps {
 }
 
 const COLORS = [
-  'black',
-  'white',
-  'red',
-  'green',
-  'blue',
-  'orange',
-  'yellow',
-  'purple',
-  'pink',
-  'gray',
-  'cyan',
+  'black', 'white', 'red', 'green', 'blue',
+  'orange', 'yellow', 'purple', 'pink', 'gray', 'cyan'
 ];
 
 const ColorPickModal: React.FC<ColorPickModalProps> = ({
@@ -36,7 +29,13 @@ const ColorPickModal: React.FC<ColorPickModalProps> = ({
   onClose,
   position,
 }) => {
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [pickedColor, setPickedColor] = useState('#00f');
+
   if (!visible) return null;
+
+  const modalHeight = showColorPicker ? "auto" : "auto";
+  const modalWidth = 300;
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -46,22 +45,70 @@ const ColorPickModal: React.FC<ColorPickModalProps> = ({
         style={[
           styles.modalContainer,
           {
-            top: Math.min(position.y + 10, Dimensions.get('window').height - 200),
-            left: Math.min(position.x, Dimensions.get('window').width - 250),
+            height: modalHeight,
+            width: modalWidth,
+            bottom: Dimensions.get('window').height - position.y,
+            left: Dimensions.get('window').width - position.x + 20,
           },
         ]}
       >
-        <View style={styles.colorGrid}>
-          {COLORS.map((color) => (
+        {!showColorPicker && (
+          <View style={styles.colorGrid}>
+            {COLORS.map((color) => (
+              <TouchableOpacity
+                key={color}
+                style={styles.colorButton}
+                onPress={() => {
+                  onSelectColor(color);
+                  onClose();
+                }}
+              >
+                <View style={[styles.outerCircle, { backgroundColor: color }]} />
+              </TouchableOpacity>
+            ))}
+
             <TouchableOpacity
-              key={color}
-              style={styles.colorButton}
-              onPress={() => onSelectColor(color)}
+              style={[styles.otherButton]}
+              onPress={() => setShowColorPicker(true)}
             >
-              <Octicons name="dot-fill" size={32} color={color} />
+              <Image
+                source={require('../../../assets/icons8-color-30.png')}
+                style={{ width: 24, height: 24 }}
+              />
             </TouchableOpacity>
-          ))}
-        </View>
+          </View>
+        )}
+
+        {showColorPicker && (
+          <View style={styles.pickerWrapper}>
+            <WheelColorPicker
+              color={pickedColor}
+              onColorChange={setPickedColor}
+              thumbSize={24}
+              sliderSize={24}
+              discrete={false}
+            />
+            <View style={{ flexDirection: 'row', marginTop: 10 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  onSelectColor(pickedColor);
+                  setShowColorPicker(false);
+                  onClose();
+                }}
+                style={{ marginHorizontal: 10 }}
+              >
+                <Text style={styles.confirmText}>OK</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => setShowColorPicker(false)}
+                style={{ marginHorizontal: 10 }}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
       </View>
     </Modal>
   );
@@ -89,8 +136,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
+    gap: 8,
   },
   colorButton: {
-    margin: 6,
+    margin: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  outerCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#000',
+  },
+  otherButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderColor: '#000',
+    borderWidth: 1,
+  },
+  pickerWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  cancelText: {
+    color: 'blue',
+    fontSize: 16,
+  },
+  confirmText: {
+    color: 'green',
+    fontSize: 16,
   },
 });
