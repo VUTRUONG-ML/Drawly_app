@@ -42,29 +42,29 @@ export default function DrawingCanvas() {
   
   const handleStart = (e: GestureResponderEvent) => {
     const { locationX: x, locationY: y } = e.nativeEvent;
-    if (tool === 'pen') {
+    if (tool === 'pen' || tool === 'eraser') {
       const path = Skia.Path.Make();
       path.moveTo(x, y);
       currentPath.current = path;
       pointsRef.current = [{x, y}]; 
-      setDrawingShape({ type: 'pen', path, points: [{x, y}] });
+      setDrawingShape({ type: 'pen', path, points: [{x, y}], color: 'rgba(0,0,0)', strokeWidth: 2 });
     } else {
       start.current = { x, y };
       end.current = { x, y };
-      setDrawingShape({ type: tool, start: { ...start.current }, end: { ...end.current } });
+      setDrawingShape({ type: tool, start: { ...start.current }, end: { ...end.current }, color: 'rgba(0,0,0)', strokeWidth: 2 });
     }
   };
 
   const handleMove = (e: GestureResponderEvent) => {
     const { locationX: x, locationY: y } = e.nativeEvent;
     if (!drawingShape) return;
-    if (tool === 'pen') {
+    if (tool === 'pen' || tool === 'eraser') {
       currentPath.current.lineTo(x, y);
       pointsRef.current.push({x, y}); // mỗi lần tay di chuyển qua điểm nào thì lưu lại điểm đó 
-      setDrawingShape({ type: 'pen', path: currentPath.current.copy(), points: pointsRef.current });
+      setDrawingShape({ type: 'pen', path: currentPath.current.copy(), points: pointsRef.current, color: 'rgba(0,0,0)', strokeWidth: 2 });
     } else {
       end.current = { x, y };
-      setDrawingShape({ type: tool, start: { ...start.current }, end: { ...end.current } });
+      setDrawingShape({ type: tool, start: { ...start.current }, end: { ...end.current }, color: 'rgba(0,0,0)', strokeWidth: 2 });
     }
   };
 
@@ -114,7 +114,7 @@ export default function DrawingCanvas() {
         });
         return <Path key={index} path={path} color="green" style="stroke" strokeWidth={2} />;
       }
-      case 'circle': {
+      case 'oval': {
         const { start, end } = shape;
         const radius = Math.sqrt((end.x - start.x) ** 2 + (end.y - start.y) ** 2);
         const path = Skia.Path.Make();
@@ -171,7 +171,7 @@ export default function DrawingCanvas() {
                 <Button title="Pen" onPress={() => setTool('pen')} />
                 <Button title="Line" onPress={() => setTool('line')} />
                 <Button title="Rectangle" onPress={() => setTool('rectangle')} />
-                <Button title="Circle" onPress={() => setTool('circle')} />
+                <Button title="Circle" onPress={() => setTool('oval')} />
                 <Button title="Save" onPress={() => handleSave()} />
             </View>
         </View>
