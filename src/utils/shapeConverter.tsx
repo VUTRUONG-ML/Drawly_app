@@ -3,7 +3,7 @@
 import { Skia } from '@shopify/react-native-skia';
 import type { Shape, Point } from '../types';
 
-export function shapeToJSON(shape: Shape) {
+export function shapeToJSON(shape: Shape): any {
   if (shape.type === 'pen' || shape.type === 'eraser') {
     return {
       type: shape.type,

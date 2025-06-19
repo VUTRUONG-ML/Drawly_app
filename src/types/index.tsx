@@ -22,7 +22,7 @@ export interface FreehandShape {
   path: SkPath;
   points: Point[];  // để lưu các điểm mà pen đi qua rồi chuyển qua json dễ hơn 
   strokeWidth: StrokeWidth;
-  color: Color;
+  color?: Color;
 }
 
 export interface BasicShape  {
@@ -30,7 +30,7 @@ export interface BasicShape  {
   start: Point;
   end: Point;
   strokeWidth: StrokeWidth;
-  color: Color;
+  color?: Color;
 }
 
 export type Shape = FreehandShape | BasicShape ;
