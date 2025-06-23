@@ -6,22 +6,28 @@ import { View,
   Text,
   findNodeHandle,
   UIManager,
+  BackHandler,
   StyleSheet, 
 } from 'react-native';
 import StrokeWidthModal from './Modal/StrokeWidthModal';
 import ColorPickModal from './Modal/ColorPickModal';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { Canvas, Path, Skia, Group } from '@shopify/react-native-skia';
 import type { Shape, ShapeType, Point, StrokeWidth, Color } from '../types'; // Các công cụ chính
 import { saveDraw, loadDraw, updateDraw } from '../services/drawService'; // Dịch vụ lưu trữ và tải hình vẽ
 import { useAuth } from '../context/AuthContext';
 import { useRoute, RouteProp  } from '@react-navigation/native';
 import { ToastAndroid } from 'react-native';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import Entypo from '@expo/vector-icons/Entypo';
+import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 // xu ly su kien ve hinh
 
 type RouteParams = {
   drawId: string;
   drawName: string;
 };
+
 
 export default function DrawingCanvas() {
   const route = useRoute<RouteProp<Record<string, RouteParams>, string>>();
@@ -32,6 +38,10 @@ export default function DrawingCanvas() {
   const [tool, setTool] = useState<ShapeType>('pen');
   const [isDrawing, setIsDrawing] = useState(false);
   const [redoStack, setRedoStack] = useState<Shape[]>([]);
+  const [scale, setScale] = useState(1);
+  
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [strokeWidth, setStrokeWidth] = useState<StrokeWidth>(5);
   const [color, setColor] = useState<Color>('rgba(0,0,0)');
@@ -40,14 +50,15 @@ export default function DrawingCanvas() {
   const [strokeModalVisible, setStrokeModalVisible] = useState(false);
   const colorBtnRef = useRef(null);
   const strokeBtnRef = useRef(null);
+  // const [newShape, setNewShape] = useState<Shape[]>([]);
   const [colorModalPos, setColorModalPos] = useState({ x: 0, y: 0 });
   const [strokeModalPos, setStrokeModalPos] = useState({ x: 0, y: 0 });
-
   const pointsRef = useRef<Point[]>([]);
   const currentPath = useRef(Skia.Path.Make());
   const start = useRef<Point>({ x: 0, y: 0 });
   const end = useRef<Point>({ x: 0, y: 0 });
-    // xu ly su kien bat dau, di chuyen va ket thuc ve hinh
+  
+ 
 
   useEffect(() => {
     if (loading || !userId || !drawId) return;
@@ -58,8 +69,11 @@ export default function DrawingCanvas() {
     fetchDraw();
   }, [loading, userId]);
 
-  
+
   const handleStart = (e: GestureResponderEvent) => {
+    if(redoStack.length > 0) {
+      setRedoStack([]); // Reset redo stack khi bắt đầu vẽ mới
+    }
     if (!isDrawing) return; // Prevent starting a new shape while drawing
     const { locationX: x, locationY: y } = e.nativeEvent;
     if (tool === 'pen' || tool === 'eraser') {
@@ -82,9 +96,11 @@ export default function DrawingCanvas() {
     if (tool === 'pen' || tool === 'eraser') {
       currentPath.current.lineTo(x, y);
       pointsRef.current.push({x, y}); // mỗi lần tay di chuyển qua điểm nào thì lưu lại điểm đó 
+      // setNewShape((prev) => [...prev, { type: tool, path: currentPath.current.copy(), points: pointsRef.current, color: drawingShape.color, strokeWidth: strokeWidth }]);
       setDrawingShape({ type: tool, path: currentPath.current.copy(), points: pointsRef.current, color: drawingShape.color, strokeWidth: strokeWidth });
     } else {
       end.current = { x, y };
+      // setNewShape((prev) => [...prev, { type: tool, start: { ...start.current }, end: { ...end.current }, color: drawingShape.color, strokeWidth: strokeWidth }]);
       setDrawingShape({ type: tool, start: { ...start.current }, end: { ...end.current }, color: color, strokeWidth: strokeWidth });
     }
   };
@@ -101,6 +117,16 @@ export default function DrawingCanvas() {
       currentPath.current = Skia.Path.Make(); // reset
       pointsRef.current = []; // reset điểm pen
     }
+  };
+
+  const handleBackPress = () => {
+    if(redoStack.length > 0) {
+      setRedoStack([]); // Reset redo stack khi bắt đầu vẽ mới
+    }
+    // if (newShape.length > 0) {
+    //   setNewShape([]);
+    //  } // Dừng vẽ nếu đang vẽ
+      return false;
   };
 
 
@@ -207,49 +233,35 @@ export default function DrawingCanvas() {
         onResponderTerminate={handleEnd}
       >
         <Canvas style={styles.canvas}>
-          {shapes.map((shape, index) => renderShape(shape, index))}
-          {drawingShape && renderShape(drawingShape, -1)}
+         <Group transform={[{ translateX: offset.x }, { translateY: offset.y }, { scale }]}>
+            {shapes.map((shape, index) => renderShape(shape, index))}
+            {drawingShape && renderShape(drawingShape, -1)}
+          </Group>
         </Canvas>
       </View>
 
         <View style={styles.toolbarContainer}>
         {[
-          { label: 'Undo', disabled: shapes.length === 0, onPress: () => {
-            if (shapes.length === 0) return;
-            setIsDrawing(false);
-            const lastShape = shapes[shapes.length - 1];
-            setRedoStack(lastShape ? [...redoStack, lastShape] : redoStack);
-            setShapes(prev => prev.slice(0, -1));
-          }},
-          { label: 'Redo', disabled: redoStack.length === 0, onPress: () => {
-            setIsDrawing(false);
-            if (redoStack.length > 0) {
-              const lastRedo = redoStack[redoStack.length - 1];
-              setShapes(prev => [...prev, lastRedo]);
-              setRedoStack(prev => prev.slice(0, -1));
-            }
-          }},
-          { label: 'Pen', onPress: () => { setTool('pen'); setIsDrawing(true); } },
-          { label: 'Eraser', onPress: () => { setTool('eraser'); setIsDrawing(true); } },
-          { label: 'Line', onPress: () => { setTool('line'); setIsDrawing(true); } },
-          { label: 'Rectangle', onPress: () => { setTool('rectangle'); setIsDrawing(true); } },
-          { label: 'oval', onPress: () => { setTool('oval'); setIsDrawing(true); } },
-        ].map(({ label, disabled, onPress }) => (
-          <TouchableOpacity
-            key={label}
-            onPress={onPress}
-            disabled={disabled}
-            style={[styles.toolButton, disabled && styles.disabledButton]}
-          >
-            <Text style={styles.toolButtonText}>{label}</Text>
-          </TouchableOpacity>
-        ))}
-
-        <View>
+            { label: 'pen', Icon: () => <Ionicons name="pencil" size={26} color="black" /> },
+            { label: 'eraser', Icon: () => <Entypo name="eraser" size={26} color="black" /> },
+            { label: 'line', Icon: () => <MaterialIcons name="remove" size={26} color="black" /> },
+            { label: 'rectangle', Icon: () => <MaterialIcons name="square" size={26} color="black" /> },
+            { label: 'oval', Icon: () => <MaterialIcons name="radio-button-unchecked" size={26} color="black" /> },
+          ].map(({ label, Icon }) => (
+            <TouchableOpacity
+              key={label}
+              onPress={() => { setTool(label as ShapeType); setIsDrawing(true); }}
+              style={[styles.toolButton]}
+            >
+              <Icon />
+            </TouchableOpacity>
+          ))}
+        {/* // stroke width va color picker */}
+        <View style={{ borderTopColor : '#ccc', borderTopWidth: 3, width: '100%', marginVertical: 8, alignItems : "center"}} />
           <TouchableOpacity
             ref={strokeBtnRef}
             onPress={() => handlePress(strokeBtnRef, setStrokeModalPos, setStrokeModalVisible)}
-            style={styles.strokeWidthButton}
+            style={styles.toolButton}
           >
             <Text style={styles.strokeWidthText}>{strokeWidth}px</Text>
           </TouchableOpacity>
@@ -257,11 +269,18 @@ export default function DrawingCanvas() {
           <TouchableOpacity
             ref={colorBtnRef}
             onPress={() => handlePress(colorBtnRef, setColorModalPos, setColorModalVisible)}
-            style = {[styles.toolButton, { alignItems : 'center',justifyContent : 'center'}]}
+            style = {[styles.toolButton]}
           >
             <View style={[styles.outerCircle, {backgroundColor: color}]}/>
           </TouchableOpacity>
-        </View>
+          {/* // zoom in va zoom out */}
+          <View style={{ borderTopColor : '#ccc', borderTopWidth: 3, width: '100%', marginVertical: 8, alignItems : "center"}} />
+            <TouchableOpacity style ={styles.toolButton} onPress={() => setScale(prev => Math.min(prev + 0.1, 3))}>
+              <FontAwesome6 name="magnifying-glass-plus" size={24} color="black" />
+            </TouchableOpacity>
+            <TouchableOpacity style ={styles.toolButton}  onPress={() => setScale(prev => Math.max(prev - 0.1, 0.5))}>
+              <FontAwesome6 name="magnifying-glass-minus" size={24} color="black" />
+            </TouchableOpacity>
 
         <StrokeWidthModal
           visible={strokeModalVisible}
@@ -281,6 +300,41 @@ export default function DrawingCanvas() {
           position={colorModalPos}
         />
       </View>
+      <View style = {styles.unRedoContainer}>
+          {[{ label: 'undo', disabled: shapes.length === 0, onPress: async () => {
+            if (shapes.length === 0) return;
+            const newShapes = [...shapes];
+            const last = newShapes.pop();
+            if (last) {
+              setShapes(newShapes);
+              setRedoStack(prev => [...prev, last]);
+            }
+            await updateDraw(drawId, newShapes, null); // hoặc [...shapes] sau khi đã cập nhật
+
+          }},
+          { label: 'redo', disabled: redoStack.length === 0, onPress: async () => {
+            if (redoStack.length === 0) return;
+            const newRedo = [...redoStack];
+            const lastRedo = newRedo.pop();
+            if (lastRedo) {
+              setRedoStack(newRedo);
+              setShapes(prev => {
+                const updatedShapes = [...prev, lastRedo];
+                updateDraw(drawId, updatedShapes, null);
+                return updatedShapes;
+              });
+            }
+          }}].map(({ label, disabled, onPress }) => (
+            <TouchableOpacity
+              key={label}
+              onPress={onPress}
+              disabled={disabled}
+              style={[styles.toolButton , styles.disabledButton]}
+            >
+              <MaterialIcons name={label === 'undo' ? 'undo' : 'redo'} size={24} color="black" />
+            </TouchableOpacity>
+          ))}
+        </View>
     </View> 
   );
 }
@@ -300,19 +354,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0',
   },
   toolbarContainer: {
-    flexDirection: 'row',
+    position: 'absolute',
+    bottom: 100,
+    right : 0,
+    margin: 10,
+    flexDirection: 'column',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 10,
+    paddingHorizontal: 0,
     paddingVertical: 8,
     backgroundColor: '#fff',
+    borderRadius: 8,
     borderTopWidth: 1,
     borderColor: '#ccc',
   },
+  unRedoContainer: {
+    position: 'absolute',
+    bottom: 550, // Adjust this value to position the undo/redo buttons
+    left: 0,
+    marginLeft: 10,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderRadius: 8,
+  },
   toolButton: {
     padding: 10,
-    backgroundColor: '#eee',
+    backgroundColor: '#fff',
     borderRadius: 8,
     marginHorizontal: 5,
   },
@@ -339,4 +411,9 @@ const styles = StyleSheet.create({
     borderRadius: 12.5,
     borderWidth: 2,
   },
+  
+zoomText: {
+  fontSize: 24,
+  paddingHorizontal: 10,
+},
 });
