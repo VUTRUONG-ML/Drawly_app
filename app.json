@@ -13,7 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Ứng dụng cần truy cập camera để chụp ảnh.",
+        "NSPhotoLibraryUsageDescription": "This app."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,6 +26,7 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": [
+        "CAMERA",
         "READ_MEDIA_IMAGES",
         "READ_EXTERNAL_STORAGE"
       ]

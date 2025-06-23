@@ -22,3 +22,23 @@ export const pickImage = async (): Promise<string | null> => {
     return null;
   }
 };
+
+export const takePhoto = async (): Promise<string | null> => {
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+
+  if (status !== 'granted') {
+    alert('Permission to access camera is required!');
+    return null;
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    allowsEditing: true,
+    quality: 1,
+  });
+
+  if (!result.canceled && result.assets && result.assets.length > 0) {
+    return result.assets[0].uri;
+  } else {
+    return null;
+  }
+};
