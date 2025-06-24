@@ -45,12 +45,12 @@ const DrawingCanvas = forwardRef(({
   const [redoStack, setRedoStack] = useState<Shape[]>([]);
   const allShapes = [...savedShapes, ...unsavedShapes];
   const [drawingShape, setDrawingShape] = useState<Shape | null>(null);
-
   const currentPath = useRef(Skia.Path.Make());
   const pointsRef = useRef<Point[]>([]);
   const start = useRef<Point>({ x: 0, y: 0 });
   const end = useRef<Point>({ x: 0, y: 0 });
 
+  const checkEmptyUnsavedShapes = () =>  {if (unsavedShapes.length === 0) return true; else return false;};
   useEffect(() => {
     if (!loading && userId && drawId) {
       loadDraw(userId, drawId).then(setSavedShapes);
@@ -137,19 +137,27 @@ const DrawingCanvas = forwardRef(({
     const last = unsavedShapes[unsavedShapes.length - 1];
     setUnsavedShapes(prev => prev.slice(0, -1));
     setRedoStack(prev => [...prev, last]);
+    return ;
   };
 
   const handleRedo = () => {
-    if (redoStack.length === 0) return;
+    if (redoStack.length === 0) return ;
     const last = redoStack[redoStack.length - 1];
     setRedoStack(prev => prev.slice(0, -1));
     setUnsavedShapes(prev => [...prev, last]);
+    return ;
   };
 
   useImperativeHandle(ref, () => ({
     handleSave,
     handleUndo,
     handleRedo,
+    checkEmptyUnsavedShapes,
+
+    checkUndoRedoState: () => ({
+    canUndo: unsavedShapes.length > 0,
+    canRedo: redoStack.length > 0,
+  }),
   }));
 
   const renderShape = (shape: Shape, index: number) => {

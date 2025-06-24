@@ -11,7 +11,6 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import Slider from '@react-native-community/slider';
 import { AntDesign } from '@expo/vector-icons';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -107,6 +106,7 @@ const styles = StyleSheet.create({
   modalContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
+    position: 'absolute',
     padding: 20,
     width: 300,
     shadowColor: '#000',

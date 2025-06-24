@@ -30,7 +30,7 @@ const ColorPickModal: React.FC<ColorPickModalProps> = ({
   position,
 }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [pickedColor, setPickedColor] = useState('#00f');
+  const [pickedColor, setPickedColor] = useState('rgba(0, 0, 0, 1)');
 
   if (!visible) return null;
 
