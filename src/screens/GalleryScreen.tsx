@@ -71,7 +71,7 @@ const GalleryScreen = ({ navigation }: any) => {
       setModalVisible(false);
       navigation.navigate('Draw', { drawId, drawName });
     } catch (error) {
-      console.error('❌ Lỗi khi tạo bản vẽ mới:', error);
+      console.error('Lỗi khi tạo bản vẽ mới:', error);
     } finally {
       setCreating(false);
     }
@@ -97,9 +97,9 @@ const GalleryScreen = ({ navigation }: any) => {
             try {
               await deleteDraw(drawId, userId);
               setDraws((prev) => prev.filter((d) => d.drawId !== drawId));
-              ToastAndroid.show('🗑 Đã xoá thành công!', ToastAndroid.SHORT);
+              ToastAndroid.show('Đã xoá thành công!', ToastAndroid.SHORT);
             } catch (error) {
-              console.error('❌ Lỗi khi xoá bản vẽ:', error);
+              console.error('Lỗi khi xoá bản vẽ:', error);
             }
           },
         },
@@ -154,7 +154,11 @@ const GalleryScreen = ({ navigation }: any) => {
               value={projectName}
               onChangeText={setProjectName}
             />
-            <Button title="Lưu" onPress={confirmSave} />
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
+              <Button title="Hủy" color="#888" onPress={() => setModalVisible(false)} />
+              <View style={{ width: 12 }} />
+              <Button title="Lưu" onPress={confirmSave} />
+            </View>
           </View>
         </View>
       </Modal>

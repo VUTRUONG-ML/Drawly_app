@@ -7,7 +7,7 @@ import DrawScreen from '../screens/DrawScreen';
 import GalleryScreen from '../screens/GalleryScreen';
 import { AuthProvider, useAuth } from '../context/AuthContext'; // tạo ở bước 1
 import { useEffect } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert } from 'react-native';
 import DrawingCanvas from '../components/drawingCanvas';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 // import CreateDrawScreen from '../screens/CreateDrawScreen';
@@ -15,8 +15,17 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 const Stack = createNativeStackNavigator();
 
 function AppNavigator() {
-  const { isAuthenticated, loading } = useAuth();
-  
+  const { isAuthenticated, loading, logout } = useAuth();
+  const confirmLogout = () => {
+    Alert.alert(
+      "Xác nhận",
+      "Bạn có chắc chắn muốn đăng xuất?",
+      [
+        { text: "Hủy", style: "cancel" },
+        { text: "Đăng xuất", style: "destructive", onPress: logout }
+      ]
+    );
+  };
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -26,7 +35,7 @@ function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator  initialRouteName={isAuthenticated ? 'Home' : 'Login'}>
+    <Stack.Navigator  initialRouteName={isAuthenticated ? 'Gallery' : 'Login'}>
       {!isAuthenticated ? (
         <>
           <Stack.Screen name="Login" component={LoginScreen} />
@@ -34,7 +43,7 @@ function AppNavigator() {
         </>
       ) : (
         <>
-          <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen
           name="Draw"
           component={DrawScreen}
@@ -51,7 +60,22 @@ function AppNavigator() {
             ),
           })}
         />
-          <Stack.Screen name="Gallery" component={GalleryScreen} />
+          <Stack.Screen 
+            name="Gallery" 
+            component={GalleryScreen} 
+            options={{
+              headerRight:() => {
+                return (
+                  <TouchableOpacity
+                    onPress={confirmLogout}
+                    style = {{marginRight: 15}}
+                  >
+                    <FontAwesome name="sign-out" size={24} color="black" />
+                  </TouchableOpacity>
+                );
+              },
+              title: "Gallery"
+            }}/>
         </>
       )}
     </Stack.Navigator>

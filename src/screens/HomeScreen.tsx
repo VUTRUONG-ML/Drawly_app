@@ -5,11 +5,6 @@ export default function HomeScreen({ navigation }: any) {
   const { isAuthenticated,logout } = useAuth();
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      {isAuthenticated && (
-        <View style={{ marginTop: 20 }}>
-          <Button title="Đăng xuất" color="red" onPress={logout} />
-        </View>
-      )}
       <Text>Home Screen</Text>
       {/* <Button title="Go to Draw" onPress={() => navigation.navigate('Draw')} /> */}
       <Button title="Go to Gallery" onPress={() => navigation.navigate('Gallery')} />
