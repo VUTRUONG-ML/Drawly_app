@@ -109,23 +109,25 @@ const GalleryScreen = ({ navigation }: any) => {
   };
   
 
-  const renderItem = ({ item }: { item: Draw & { thumbnailUrl: string } }) => (
-    <TouchableOpacity
-      style={styles.projectBox}
-      onPress={() => handleOpenDraw(item.drawId, item.drawName)}
-    >
-      <Image source={{ uri: item.thumbnailUrl }} style={styles.image} />
-      <Text style={styles.name}>{item.drawName}</Text>
-
+  const renderItem = ({ item }: { item: Draw & { thumbnailUrl: string } }) => {
+    if (!item) return null;
+    return (
       <TouchableOpacity
-        style={styles.deleteButton}
-        onPress={() => handleDelete(item.drawId)}
+        style={styles.projectBox}
+        onPress={() => handleOpenDraw(item.drawId, item.drawName)}
       >
-        <Entypo name="trash" size={24} color="black" />
+        <Image source={{ uri: item.thumbnailUrl }} style={styles.image} />
+        <Text style={styles.name}>{item.drawName}</Text>
+  
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleDelete(item.drawId)}
+        >
+          <Entypo name="trash" size={24} color="black" />
+        </TouchableOpacity>
       </TouchableOpacity>
-    </TouchableOpacity>
-
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>

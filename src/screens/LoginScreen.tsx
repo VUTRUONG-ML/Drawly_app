@@ -35,6 +35,16 @@ const LoginScreen = ({ navigation }: any) => {
     }
   };
 
+  const handleGuestLogin = async () => {
+    try {
+      const uid = await loginUser('guest@gmail.com', '123456'); // hoặc gọi hàm loginGuest()
+      login(uid);
+    } catch (error) {
+      console.error('Lỗi đăng nhập khách:', error);
+      Alert.alert('Lỗi', 'Không thể đăng nhập khách.');
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -64,6 +74,9 @@ const LoginScreen = ({ navigation }: any) => {
       <View style={styles.buttonContainer}>
         <Button title="Đăng nhập" onPress={handleLogin} color="#007bff" />
       </View>
+      <TouchableOpacity onPress={handleGuestLogin} style={styles.guestButton}>
+        <Text style={styles.guestText}>Trải nghiệm ngay không cần tài khoản</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.navigate('Register')}>
         <Text style={styles.registerLink}>Chưa có tài khoản? Đăng ký</Text>
@@ -105,6 +118,16 @@ const styles = StyleSheet.create({
     color: '#007bff',
     textDecorationLine: 'underline',
     fontSize: 14,
+  },
+  guestButton: {
+    marginTop: 16,
+    padding: 10,
+  },
+  
+  guestText: {
+    color: '#6c757d',
+    fontSize: 14,
+    textDecorationLine: 'underline',
   },
 });
 

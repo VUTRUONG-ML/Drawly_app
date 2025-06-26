@@ -1,5 +1,5 @@
   import React, { useState, useRef, useEffect } from 'react';
-  import { View, StyleSheet, TouchableOpacity, Text, Modal } from 'react-native';
+  import { View, StyleSheet, TouchableOpacity, Text, Modal, Alert } from 'react-native';
   import DrawingCanvas from '../components/drawingCanvas';
   import StrokeWidthModal from '../components/Modal/StrokeWidthModal';
   import ColorPickModal from '../components/Modal/ColorPickModal';
@@ -57,6 +57,33 @@ type RootStackParamList = {
     }
     return () => clearInterval(interval);
   }, [route.params?.saveRequested, navigation]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // Nếu chưa có hình vẽ mới nào 
+      if(canvasRef.current?.checkEmptyUnsavedShapes?.()) return;
+
+      // Ngắn kko cho rời khỏi trang ngay lập tức 
+      e.preventDefault();
+    
+      Alert.alert(
+        "Lưu bản vẽ?",
+        "Bạn có muốn lưu bản vẽ trước khi thoát không?",
+        [
+          { text: "Không lưu", style: "destructive", onPress: () => navigation.dispatch(e.data.action) },
+          { text: "Hủy", style: "cancel" },
+          {
+            text: "Lưu",
+            onPress: () => {
+              canvasRef.current?.handleSave?.();
+              navigation.dispatch(e.data.action);
+            }
+          }
+        ]
+      );
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const handlePress = (
     btnRef: React.RefObject<any>,

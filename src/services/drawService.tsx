@@ -65,7 +65,7 @@ export async function deleteDraw(drawId: string, userId: string) {
       drawIds: arrayRemove(drawId),
     });
   } else {
-    console.warn(`⚠️ User với ID ${userId} chưa tồn tại trong Users collection.`);
+    console.warn(` User với ID ${userId} chưa tồn tại trong Users collection.`);
     // (Không làm gì thêm hoặc tuỳ bạn muốn tạo document trống hay báo lỗi)
   }
 }
@@ -90,6 +90,11 @@ export async function getDrawsByUser(userId: string): Promise<{ drawId: string, 
     const querySnapshot = await getDocs(q);
 
     const result: { drawId: string, drawName: string }[] = [];
+
+    if (querySnapshot.empty) {
+      console.log("Không có bản vẽ nào thuộc userId này");
+      return [];
+    }
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();

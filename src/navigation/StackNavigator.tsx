@@ -35,15 +35,15 @@ function AppNavigator() {
   }
 
   return (
-    <Stack.Navigator  initialRouteName={isAuthenticated ? 'Gallery' : 'Login'}>
+    <Stack.Navigator  initialRouteName={isAuthenticated ? 'Gallery' : 'Home'}>
       {!isAuthenticated ? (
         <>
+          <Stack.Screen name="Home" component={HomeScreen} />
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
         </>
       ) : (
         <>
-        <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen
           name="Draw"
           component={DrawScreen}
