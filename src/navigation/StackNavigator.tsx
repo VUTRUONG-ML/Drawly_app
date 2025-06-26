@@ -1,5 +1,4 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { NavigationContainer } from '@react-navigation/native';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
@@ -61,9 +60,7 @@ function AppNavigator() {
 export default function StackNavigator() {
   return (
     <AuthProvider>
-      <NavigationContainer >
         <AppNavigator  />
-      </NavigationContainer>
     </AuthProvider>
   );
 }

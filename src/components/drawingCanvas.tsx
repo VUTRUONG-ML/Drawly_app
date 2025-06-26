@@ -4,6 +4,7 @@ import React, {
   useEffect,
   forwardRef,
   useImperativeHandle,
+  useMemo,
 } from 'react';
 import { View, StyleSheet, GestureResponderEvent } from 'react-native';
 import { Canvas, Path, Skia, Group } from '@shopify/react-native-skia';
@@ -11,6 +12,8 @@ import { Shape, ShapeType, Point, StrokeWidth, Color } from '../types';
 import { loadDraw, updateDraw } from '../services/drawService';
 import { useAuth } from '../context/AuthContext';
 import { useRoute, RouteProp } from '@react-navigation/native';
+import { useImage, Image as SkiaImage } from '@shopify/react-native-skia';
+import { useSkiaImages } from '../utils/useSkiaImages';
 
 type RouteParams = {
   drawId: string;
@@ -25,17 +28,28 @@ interface DrawingCanvasProps {
   offset: { x: number; y: number };
   setScale: (value: number) => void;
   setOffset: (offset: { x: number; y: number }) => void;
+  images: {
+    id: string;
+    uri: string;
+    x: number;
+    y: number;
+  }[];
 }
 
-const DrawingCanvas = forwardRef(({
-  tool,
-  color,
-  strokeWidth,
-  scale,
-  offset,
-  setScale,
-  setOffset,
-}: DrawingCanvasProps, ref) => {
+const DrawingCanvas = forwardRef((props: DrawingCanvasProps, ref) => {
+  const {
+    tool,
+    color,
+    strokeWidth,
+    scale,
+    offset,
+    setScale,
+    setOffset,
+    images,
+  } = props;
+
+  const skiaImages = useSkiaImages(images);
+  
   const route = useRoute<RouteProp<Record<string, RouteParams>, string>>();
   const { drawId } = route.params;
   const { userId, loading } = useAuth();
@@ -224,6 +238,18 @@ const DrawingCanvas = forwardRef(({
       >
         <Canvas style={styles.canvas}>
           <Group transform={[{ translateX: offset.x }, { translateY: offset.y }, { scale }]}>
+            {skiaImages.map((img) =>
+              img.image ? (
+                <SkiaImage
+                  key={img.id}
+                  image={img.image}
+                  x={img.x}
+                  y={img.y}
+                  width={100} // tuỳ chỉnh
+                  height={100}
+                />
+              ) : null
+            )}
             {allShapes.map(renderShape)}
             {drawingShape && renderShape(drawingShape, -1)}
           </Group>

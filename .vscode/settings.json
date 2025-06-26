@@ -1,4 +1,7 @@
 {
+<<<<<<< HEAD
     "github.copilot.nextEditSuggestions.enabled": false,
     "github.copilot.nextEditSuggestions.fixes": false
+=======
+>>>>>>> feature/img
 }
