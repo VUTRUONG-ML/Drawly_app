@@ -58,7 +58,10 @@ const DrawingCanvas = forwardRef(({
   }, [loading, userId, drawId]);
 
   const handleStart = (e: GestureResponderEvent) => {
-    const { locationX: x, locationY: y } = e.nativeEvent;
+    const rawX = e.nativeEvent.locationX;
+    const rawY = e.nativeEvent.locationY;
+    const x = (rawX - offset.x) / scale;
+    const y = (rawY - offset.y) / scale;
 
     if (tool === 'pen' || tool === 'eraser') {
       const path = Skia.Path.Make();
@@ -79,26 +82,30 @@ const DrawingCanvas = forwardRef(({
     }
   };
 
-  const handleMove = (e: GestureResponderEvent) => {
-    if (!drawingShape) return;
-    const { locationX: x, locationY: y } = e.nativeEvent;
 
-    if ('points' in drawingShape) {
-      currentPath.current.lineTo(x, y);
-      pointsRef.current.push({ x, y });
-      setDrawingShape({
-        ...drawingShape,
-        path: currentPath.current.copy(),
-        points: [...pointsRef.current],
-      });
-    } else if ('start' in drawingShape && 'end' in drawingShape) {
-      end.current = { x, y };
-      setDrawingShape({
-        ...drawingShape,
-        end: { ...end.current },
-      });
-    }
-  };
+  const handleMove = (e: GestureResponderEvent) => {
+  if (!drawingShape) return;
+  const rawX = e.nativeEvent.locationX;
+  const rawY = e.nativeEvent.locationY;
+  const x = (rawX - offset.x) / scale;
+  const y = (rawY - offset.y) / scale;
+
+  if ('points' in drawingShape) {
+    currentPath.current.lineTo(x, y);
+    pointsRef.current.push({ x, y });
+    setDrawingShape({
+      ...drawingShape,
+      path: currentPath.current.copy(),
+      points: [...pointsRef.current],
+    });
+  } else if ('start' in drawingShape && 'end' in drawingShape) {
+    end.current = { x, y };
+    setDrawingShape({
+      ...drawingShape,
+      end: { ...end.current },
+    });
+  }
+};
 
   const handleEnd = () => {
     if (!drawingShape) return;
