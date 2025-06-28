@@ -8,6 +8,8 @@ import {
 } from 'react-native-gesture-handler';
 import { MaterialIcons } from '@expo/vector-icons';
 
+
+
 const snapToNearestRightAngle = (angleRad: number) => {
   const deg = ((angleRad * 180) / Math.PI + 360) % 360;
   const snapPoints = [0, 90, 180, 270, 360];
@@ -31,6 +33,8 @@ type Props = {
   onBringToFront: (id: string) => void;
   onSendToBack: (id: string) => void;
   onLock: (id: string) => void;
+  isResizing: boolean;
+  onExitResize: () => void;
 };
 
 export default function DraggableImage({
@@ -45,6 +49,8 @@ export default function DraggableImage({
   onBringToFront,
   onSendToBack,
   onLock,
+  isResizing,
+  onExitResize,
 }: Props) {
   const [locked, setLocked] = React.useState(false);
   const [showMenu, setShowMenu] = React.useState(true);
@@ -52,12 +58,30 @@ export default function DraggableImage({
   const [orientation, setOrientation] = React.useState<'landscape' | 'portrait'>('landscape');
 
   // Pan gesture state
+  // Image dynamic width/height state for resizing
+  const [imageWidth, setImageWidth] = React.useState(200);
+  const [imageHeight, setImageHeight] = React.useState(200);
+
+  // PanResponder for bottom-right resize handle
+  const resizeBRPan = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        // Resize proportionally based on gesture movement, min 50x50
+        const newWidth = Math.max(50, imageWidth + gestureState.dx);
+        const newHeight = Math.max(50, imageHeight + gestureState.dy);
+        setImageWidth(newWidth);
+        setImageHeight(newHeight);
+      },
+      onPanResponderRelease: () => {},
+    })
+  ).current;
   const panX = useRef(new Animated.Value(0)).current;
   const panY = useRef(new Animated.Value(0)).current;
   const translateX = useRef(new Animated.Value(initialX)).current;
   const translateY = useRef(new Animated.Value(initialY)).current;
 
-  const onPanGestureEvent = !locked
+  const onPanGestureEvent = !locked && selected && !isResizing
     ? Animated.event(
         [{ nativeEvent: { translationX: panX, translationY: panY } }],
         { useNativeDriver: false }
@@ -207,19 +231,19 @@ export default function DraggableImage({
   return (
     <Animated.View style={styles.wrapper}>
       <RotationGestureHandler
-        enabled={!locked}
+        enabled={!locked && !isResizing}
         onGestureEvent={onRotateGestureEvent}
         onHandlerStateChange={onRotateHandlerStateChange}
       >
         <PanGestureHandler
-          enabled={!locked}
+          enabled={!locked && selected && !isResizing}
           onGestureEvent={onPanGestureEvent}
           onHandlerStateChange={onPanHandlerStateChange}
         >
           <PinchGestureHandler
             onGestureEvent={onPinchGestureEvent}
             onHandlerStateChange={onPinchHandlerStateChange}
-            enabled={!locked}
+            enabled={!locked && !isResizing}
           >
             <Animated.View
               style={{
@@ -242,8 +266,8 @@ export default function DraggableImage({
                 <View>
                   <Animated.View
                     style={{
-                      width: 200,
-                      height: 200,
+                      width: imageWidth,
+                      height: imageHeight,
                       transform: [{ scale }],
                       position: 'relative',
                       justifyContent: 'center',
@@ -267,6 +291,35 @@ export default function DraggableImage({
                         }}
                       />
                     )}
+                    {isResizing && (
+                      <>
+                        {[
+                          { left: 0, top: 0 }, { left: 100, top: 0 }, { right: 0, top: 0 },
+                          { left: 0, top: 100 }, { right: 0, top: 100 },
+                          { left: 0, bottom: 0 }, { left: 100, bottom: 0 }, { right: 0, bottom: 0 },
+                        ].map((pos, idx) => (
+                          <View
+                            key={idx}
+                            {...(idx === 7 ? resizeBRPan.panHandlers : {})}
+                            style={[
+                              styles.resizeHandle,
+                              {
+                                position: 'absolute',
+                                ...pos,
+                                marginLeft: pos.left === 100 ? -6 : 0,
+                                marginTop: pos.top === 100 ? -6 : 0
+                              }
+                            ]}
+                          />
+                        ))}
+
+                        <TouchableWithoutFeedback onPress={() => onExitResize()}>
+                          <View style={styles.doneButton}>
+                            <Text style={{ color: 'white' }}>Done</Text>
+                          </View>
+                        </TouchableWithoutFeedback>
+                      </>
+                    )}
                   </Animated.View>
                 </View>
               </TouchableWithoutFeedback>
@@ -274,47 +327,6 @@ export default function DraggableImage({
           </PinchGestureHandler>
         </PanGestureHandler>
       </RotationGestureHandler>
-      {selected && showMenu && !isInteracting && (
-        <Animated.View
-          style={[
-            styles.contextMenu,
-            {
-              position: 'absolute',
-              left: '50%',
-              marginLeft: -60,
-              transform: [
-                { translateX: Animated.add(translateX, panX) },
-                {
-                  translateY: Animated.add(
-                    translateY,
-                    Animated.multiply(scale, new Animated.Value(-90))
-                  )
-                },
-              ],
-            },
-          ]}
-        >
-          <TouchableWithoutFeedback onPressIn={e => e.stopPropagation()}>
-            <MaterialIcons name="content-copy" size={24} onPress={() => onDuplicate(id)} />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPressIn={e => e.stopPropagation()}>
-            <MaterialIcons name="flip-to-front" size={24} onPress={() => onBringToFront(id)} />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPressIn={e => e.stopPropagation()}>
-            <MaterialIcons name="flip-to-back" size={24} onPress={() => onSendToBack(id)} />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPressIn={e => e.stopPropagation()}>
-            <MaterialIcons
-              name={locked ? 'lock' : 'lock-open'}
-              size={24}
-              onPress={() => setLocked(!locked)}
-            />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPressIn={e => e.stopPropagation()}>
-            <MaterialIcons name="delete" size={24} onPress={() => onDelete(id)} />
-          </TouchableWithoutFeedback>
-        </Animated.View>
-      )}
     </Animated.View>
   );
 }
@@ -358,13 +370,22 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   resizeHandle: {
+  position: 'absolute',
+  width: 12,
+  height: 12,
+  backgroundColor: 'black',
+  borderRadius: 6,
+  borderWidth: 1,
+  borderColor: 'white',
+  zIndex: 10,
+  },
+  doneButton: {
     position: 'absolute',
-    width: 20,
-    height: 20,
-    backgroundColor: 'white',
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 10,
-    zIndex: 10,
+    bottom: -40,
+    alignSelf: 'center',
+    backgroundColor: 'black',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 12,
   },
 });

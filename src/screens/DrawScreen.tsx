@@ -1,19 +1,85 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Button, ScrollView, Animated, TouchableWithoutFeedback, Modal, TouchableOpacity, Pressable } from 'react-native';
+import React, { useState, useRef, useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, Button, ScrollView, Animated, TouchableWithoutFeedback, Modal, TouchableOpacity, Pressable, useWindowDimensions } from 'react-native';
 import { pickImage, takePhoto } from '../services/ImagePickerService';
 import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 import DraggableImage from '../components/DraggableImage';
 import { PinchGestureHandler, State } from 'react-native-gesture-handler';
+import DrawingCanvas from '../components/DrawingCanvas';
+import DrawingToolbar from '../components/DrawingToolbar';
+import DrawingCanvasLayer from '../components/DrawingCanvasLayer';
+
 
 type ImageItem = {
   uri: string;
   id: string;
 };
 
-const DrawingScreen = () => {
+const DrawingScreen = ({ navigation }: any) => {
+  const { width, height } = useWindowDimensions();
   const [images, setImages] = useState<{ id: string, uri: string, x: number, y: number }[]>([]);
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null);
   const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
+  const [activeMenu, setActiveMenu] = useState<'canvas' | 'image' | null>('canvas');
+  // Track which image is in resize mode
+  const [resizeActiveId, setResizeActiveId] = useState<string | null>(null);
+
+  const imageMenuAnim = useRef(new Animated.Value(0)).current;
+  const canvasMenuAnim = useRef(new Animated.Value(1)).current;
+
+  // --- TOOL MODE STATE ---
+  const [activeTool, setActiveTool] = useState<string | null>(null); // null = no tool active
+
+  // Update header: luôn là function, hiện Done khi có tool, hiện Draw khi không có tool
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        activeTool ? (
+          <TouchableOpacity onPress={() => setActiveTool(null)} style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Done</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={{ fontSize: 18, fontWeight: 'bold' }}>Draw</Text>
+        )
+      ),
+      headerRight: () => (
+        <TouchableOpacity onPress={() => setPhotoMenuVisible(true)} style={{ marginRight: 16 }}>
+          <Ionicons name="image-outline" size={24} color="black" />
+        </TouchableOpacity>
+      ),
+      headerTitleAlign: 'center',
+    });
+  }, [navigation, activeTool]);
+
+  React.useEffect(() => {
+    if (activeMenu === 'image') {
+      Animated.parallel([
+        Animated.timing(imageMenuAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(canvasMenuAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (activeMenu === 'canvas') {
+      Animated.parallel([
+        Animated.timing(imageMenuAnim, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(canvasMenuAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [activeMenu]);
 
   // Function to handle adding an image by URI
   const handleAddImage = (uri: string) => {
@@ -51,9 +117,18 @@ const DrawingScreen = () => {
     console.log('Lock image:', id);
   };
 
+  const resizeImage = (id: string) => {
+    setResizeActiveId(id);
+  };
+
   const baseScale = useRef(new Animated.Value(1)).current;
   const pinchScale = useRef(new Animated.Value(1)).current;
   const scale = Animated.multiply(baseScale, pinchScale);
+  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+
+  // Tính minScale để không zoom out quá mức, luôn vừa đủ viewport
+  const minScale = Math.max(width / (width * 2), height / (height * 2)); // = 0.5 nếu canvas gấp đôi viewport
+  const maxScale = 4; // Giới hạn zoom in tối đa (bạn có thể chỉnh lớn hơn tuỳ ý)
 
   const onPinchGestureEvent = Animated.event(
     [{ nativeEvent: { scale: pinchScale } }],
@@ -65,44 +140,46 @@ const DrawingScreen = () => {
       const currentBaseScale = (baseScale as any)._value;
       const currentPinchScale = (pinchScale as any)._value;
       let newScale = currentBaseScale * currentPinchScale;
-      const MIN_SCALE = 0.5;
-      if (newScale < MIN_SCALE) newScale = MIN_SCALE;
+      if (newScale < minScale) {
+        newScale = minScale;
+        pan.setValue({ x: 0, y: 0 }); // Reset pan về giữa khi zoom nhỏ nhất
+      }
+      if (newScale > maxScale) newScale = maxScale;
       baseScale.setValue(newScale);
       pinchScale.setValue(1);
     }
   };
 
+  // --- CANVAS TAP: exit tool mode if any tool is active ---
+  const handleCanvasTap = () => {
+    setActiveMenu('canvas');
+    setSelectedImageId(null);
+    setResizeActiveId(null);
+    // If a tool is active, exit tool mode
+    if (activeTool) setActiveTool(null);
+  };
+
   return (
     <View style={styles.container}>
 
-      <View style={styles.toolbar}>
-        {/* Old button removed, replaced with icon */}
-        <TouchableOpacity onPress={() => setPhotoMenuVisible(true)} style={{ marginLeft: 8 }}>
-          <Ionicons name="image-outline" size={28} color="black" />
-        </TouchableOpacity>
-        {/* Thêm các nút khác nếu muốn */}
-      </View>
-
-      <Text>Drawing Screen</Text>
-
-      <TouchableWithoutFeedback onPress={() => setSelectedImageId(null)}>
+      {/* Canvas area with pinch-to-zoom */}
+      <TouchableWithoutFeedback onPress={handleCanvasTap}>
         <View style={{ flex: 1 }}>
           <PinchGestureHandler
             onGestureEvent={onPinchGestureEvent}
             onHandlerStateChange={onPinchHandlerStateChange}
           >
-            <Animated.View
-              style={{
-                flex: 1,
-                backgroundColor: '#fafafa',
-                borderWidth: 2,
-                borderColor: '#2196f3',
-                margin: 16,
-                borderRadius: 12,
-                overflow: 'hidden',
-                transform: [{ scale }],
-              }}
-            >
+            <Animated.View style={{ flex: 1, transform: [
+              { scale },
+              { translateX: pan.x },
+              { translateY: pan.y },
+            ] }}>
+              <DrawingCanvas />
+              {/* Only allow drawing if pen tool is active */}
+              <DrawingCanvasLayer
+                selectedTool={activeMenu === 'canvas' && activeTool === 'pen' ? 'pen' : ''}
+                onCanvasTap={handleCanvasTap}
+              />
               {images.map((img) => (
                 <DraggableImage
                   key={img.id}
@@ -113,12 +190,18 @@ const DrawingScreen = () => {
                   onDelete={() => {
                     setImages(prev => prev.filter(item => item.id !== img.id));
                   }}
-                  onSelect={setSelectedImageId}
+                  onSelect={(id) => {
+                    setSelectedImageId(id);
+                    setResizeActiveId(null);
+                    setActiveMenu('image'); // Khi nhấn vào ảnh, chỉ hiện menu ảnh
+                  }}
                   selected={selectedImageId === img.id}
                   onDuplicate={duplicateImage}
                   onBringToFront={bringToFront}
                   onSendToBack={sendToBack}
                   onLock={lockImage}
+                  isResizing={resizeActiveId === img.id}
+                  onExitResize={() => setResizeActiveId(null)}
                 />
               ))}
             </Animated.View>
@@ -190,6 +273,67 @@ const DrawingScreen = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
+      {/* Image menu (unchanged) */}
+      {activeMenu === 'image' && selectedImageId && (
+        <Animated.View
+          style={[
+            styles.bottomMenu,
+            {
+              opacity: imageMenuAnim,
+              transform: [
+                {
+                  translateY: imageMenuAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [40, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+          pointerEvents={activeMenu === 'image' ? 'auto' : 'none'}
+        >
+          <TouchableOpacity onPress={() => resizeImage(selectedImageId)}>
+            <MaterialIcons name="aspect-ratio" size={24} color="black" />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => duplicateImage(selectedImageId)}>
+            <MaterialIcons name="content-copy" size={24} color="black" />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => bringToFront(selectedImageId)}>
+            <MaterialIcons name="flip-to-front" size={24} color="black" />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => sendToBack(selectedImageId)}>
+            <MaterialIcons name="flip-to-back" size={24} color="black" />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => {
+            setImages(prev => prev.filter(item => item.id !== selectedImageId));
+            setSelectedImageId(null);
+            setActiveMenu('canvas');
+          }}>
+            <MaterialIcons name="delete" size={24} color="red" />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+
+      {/* Canvas toolbar: activate tool mode on tool select */}
+      <Animated.View style={{
+        position: 'absolute',
+        left: 0, right: 0, bottom: 0,
+        opacity: canvasMenuAnim,
+        transform: [{ translateY: canvasMenuAnim.interpolate({ inputRange: [0, 1], outputRange: [40, 0] }) }],
+      }}
+      pointerEvents={activeMenu === 'canvas' ? 'auto' : 'none'}
+      >
+        {activeMenu === 'canvas' && (
+          <DrawingToolbar onSelectTool={(tool) => {
+            if (tool !== activeTool) setActiveTool(tool); // Only set if different, so pen stays active
+          }} activeTool={activeTool} />
+        )}
+      </Animated.View>
+      
     </View>
   );
 };
@@ -211,4 +355,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
   },
 
+  bottomMenu: {
+  position: 'absolute',
+  bottom: 40,                // 👉 Đẩy lên trên một chút
+  left: 60,                  // 👉 Thu hẹp chiều ngang, không full screen
+  right: 60,
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  alignItems: 'center',
+  paddingVertical: 5,        //Giảm độ cao
+  paddingHorizontal: 10,
+  backgroundColor: '#ffffff',
+  borderRadius: 16,          //Bo tròn hơn
+  elevation: 8,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.15,
+  shadowRadius: 4,
+  },
 });
