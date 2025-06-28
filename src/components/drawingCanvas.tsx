@@ -5,7 +5,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import { View, StyleSheet, GestureResponderEvent, ToastAndroid } from 'react-native';
+import { View, StyleSheet, GestureResponderEvent } from 'react-native';
 import { Canvas, Path, Skia, Group } from '@shopify/react-native-skia';
 import { Shape, ShapeType, Point, StrokeWidth, Color } from '../types';
 import { loadDraw, updateDraw } from '../services/drawService';
@@ -50,12 +50,19 @@ const DrawingCanvas = forwardRef(({
   const start = useRef<Point>({ x: 0, y: 0 });
   const end = useRef<Point>({ x: 0, y: 0 });
 
-  const checkEmptyUnsavedShapes = () =>  {if (unsavedShapes.length === 0) return true; else return false;};
+  // Chuyển tọa độ touch từ màn hình sang hệ tọa độ canvas
+  const screenToCanvas = (x: number, y: number): Point => ({
+    x: (x - offset.x) / scale,
+    y: (y - offset.y) / scale,
+  });
+
   useEffect(() => {
     if (!loading && userId && drawId) {
       loadDraw(userId, drawId).then(setSavedShapes);
     }
   }, [loading, userId, drawId]);
+
+  const checkEmptyUnsavedShapes = () => unsavedShapes.length === 0;
 
   const handleStart = (e: GestureResponderEvent) => {
     const rawX = e.nativeEvent.locationX;
@@ -84,28 +91,29 @@ const DrawingCanvas = forwardRef(({
 
 
   const handleMove = (e: GestureResponderEvent) => {
-  if (!drawingShape) return;
-  const rawX = e.nativeEvent.locationX;
-  const rawY = e.nativeEvent.locationY;
-  const x = (rawX - offset.x) / scale;
-  const y = (rawY - offset.y) / scale;
+    if (!drawingShape) return;
+    const rawX = e.nativeEvent.locationX;
+    const rawY = e.nativeEvent.locationY;
+    const x = (rawX - offset.x) / scale;
+    const y = (rawY - offset.y) / scale;
 
-  if ('points' in drawingShape) {
-    currentPath.current.lineTo(x, y);
-    pointsRef.current.push({ x, y });
-    setDrawingShape({
-      ...drawingShape,
-      path: currentPath.current.copy(),
-      points: [...pointsRef.current],
-    });
-  } else if ('start' in drawingShape && 'end' in drawingShape) {
-    end.current = { x, y };
-    setDrawingShape({
-      ...drawingShape,
-      end: { ...end.current },
-    });
-  }
-};
+    if ('points' in drawingShape) {
+      currentPath.current.lineTo(x, y);
+      pointsRef.current.push({ x, y });
+      setDrawingShape({
+        ...drawingShape,
+        path: currentPath.current.copy(),
+        points: [...pointsRef.current],
+      });
+    } else if ('start' in drawingShape && 'end' in drawingShape) {
+      end.current = { x, y };
+      setDrawingShape({
+        ...drawingShape,
+        end: { ...end.current },
+      });
+    }
+  };
+
 
   const handleEnd = () => {
     if (!drawingShape) return;
@@ -132,11 +140,6 @@ const DrawingCanvas = forwardRef(({
         setSavedShapes(updated);
         setUnsavedShapes([]);
         setRedoStack([]);
-        ToastAndroid.showWithGravity(
-          'Bạn đã lưu bản vẽ thành công',
-          ToastAndroid.SHORT,
-          ToastAndroid.CENTER,
-        );
         console.log('✔️ Đã lưu bản vẽ');
       } catch (err) {
         console.error('❌ Lỗi lưu bản vẽ:', err);
@@ -149,15 +152,13 @@ const DrawingCanvas = forwardRef(({
     const last = unsavedShapes[unsavedShapes.length - 1];
     setUnsavedShapes(prev => prev.slice(0, -1));
     setRedoStack(prev => [...prev, last]);
-    return ;
   };
 
   const handleRedo = () => {
-    if (redoStack.length === 0) return ;
+    if (redoStack.length === 0) return;
     const last = redoStack[redoStack.length - 1];
     setRedoStack(prev => prev.slice(0, -1));
     setUnsavedShapes(prev => [...prev, last]);
-    return ;
   };
 
   useImperativeHandle(ref, () => ({
@@ -165,11 +166,10 @@ const DrawingCanvas = forwardRef(({
     handleUndo,
     handleRedo,
     checkEmptyUnsavedShapes,
-
     checkUndoRedoState: () => ({
-    canUndo: unsavedShapes.length > 0,
-    canRedo: redoStack.length > 0,
-  }),
+      canUndo: unsavedShapes.length > 0,
+      canRedo: redoStack.length > 0,
+    }),
   }));
 
   const renderShape = (shape: Shape, index: number) => {
@@ -244,6 +244,7 @@ const DrawingCanvas = forwardRef(({
     </View>
   );
 });
+
 export default DrawingCanvas;
 
 const styles = StyleSheet.create({
@@ -256,5 +257,6 @@ const styles = StyleSheet.create({
   },
   canvas: {
     flex: 1,
+    width: '100%', // Đã sửa từ '400%' -> '100%' để tránh bị thu nhỏ bất thường
   },
 });
