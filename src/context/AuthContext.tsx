@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }: any) => {
       console.error("Error signing out: ", error);
     });
   }
-
+  
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
       if(user){

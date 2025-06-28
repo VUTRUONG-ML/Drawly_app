@@ -5,7 +5,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import { View, StyleSheet, GestureResponderEvent } from 'react-native';
+import { View, StyleSheet, GestureResponderEvent, ToastAndroid } from 'react-native';
 import { Canvas, Path, Skia, Group } from '@shopify/react-native-skia';
 import { Shape, ShapeType, Point, StrokeWidth, Color } from '../types';
 import { loadDraw, updateDraw } from '../services/drawService';
@@ -132,6 +132,11 @@ const DrawingCanvas = forwardRef(({
         setSavedShapes(updated);
         setUnsavedShapes([]);
         setRedoStack([]);
+        ToastAndroid.showWithGravity(
+          'Bạn đã lưu bản vẽ thành công',
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER,
+        );
         console.log('✔️ Đã lưu bản vẽ');
       } catch (err) {
         console.error('❌ Lỗi lưu bản vẽ:', err);
