@@ -129,6 +129,14 @@ const GalleryScreen = ({ navigation }: any) => {
     );
   };
 
+  if(!userId || loading){
+    return (
+      <View style={styles.container}>
+      <Text style={{ fontSize: 18, textAlign: 'center' }}>Đang tải dữ liệu...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>🎨 Dự án của bạn</Text>
