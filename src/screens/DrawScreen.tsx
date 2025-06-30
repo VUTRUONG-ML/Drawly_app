@@ -1,6 +1,6 @@
-  import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
   import { View, StyleSheet, TouchableOpacity, Text, Modal, Alert } from 'react-native';
-  import DrawingCanvas from '../components/drawingCanvas';
+  import DrawingCanvas from '../components/DrawingCanvas';
   import StrokeWidthModal from '../components/Modal/StrokeWidthModal';
   import ColorPickModal from '../components/Modal/ColorPickModal';
   import { ShapeType, Color, StrokeWidth } from '../types';
@@ -11,7 +11,9 @@
   import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
   import { useNavigation, useRoute } from '@react-navigation/native';
   import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { RouteProp } from '@react-navigation/native';
+  import type { RouteProp } from '@react-navigation/native';
+  import { pickImage } from '../services/ImagePickerService'; 
+  import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 type RootStackParamList = {
   Draw: { drawId: string; drawName: string; saveRequested?: boolean };
@@ -21,9 +23,27 @@ type RootStackParamList = {
   Gallery: undefined;
 };
 
+type ExtendedShapeType = ShapeType | 'none';
+
   export default function DrawingScreen() {
 
-    const [tool, setTool] = useState<ShapeType>('pen');
+    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Draw'>>();
+    const [tool, setTool] = useState<ExtendedShapeType>('none');
+    useLayoutEffect(() => {
+      navigation.setOptions({
+        headerTitleAlign: 'center',
+        headerTitle: tool !== 'none' ? () => (
+          <TouchableOpacity
+            onPress={() => {
+              setTool('none');
+              setToolbarVisible(true);
+            }}
+          >
+            <Text style={{ color: '#3399ff', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+          </TouchableOpacity>
+        ) : '',
+      });
+    }, [navigation, tool]);
     const [scale, setScale] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [strokeWidth, setStrokeWidth] = useState<StrokeWidth>(5);
@@ -37,7 +57,7 @@ type RootStackParamList = {
     const [toolbarVisible, setToolbarVisible] = useState(true);
     const [unredoVisible, setUnredoVisible] = useState(true);
 
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Draw'>>();
+    
     const route = useRoute<RouteProp<RootStackParamList, 'Draw'>>();
     const canvasRef = useRef<any>(null);
 
@@ -100,7 +120,7 @@ type RootStackParamList = {
     }
   };
 
-  const getToolIcon = (tool: ShapeType) => {
+  const getToolIcon = (tool: ShapeType | 'none') => {
   switch (tool) {
     case 'pen':
       return <Ionicons name="pencil" size={20} color="black" />;
@@ -120,6 +140,13 @@ type RootStackParamList = {
   const strokeBtnRef = useRef<any>(null);
   const colorBtnRef = useRef<any>(null);
 
+  const handlePickImage = async () => {
+  const uri = await pickImage();
+  if (uri) {
+    canvasRef.current?.addImage?.(uri); // Giả sử trong DrawingCanvas có hàm addImage
+  }
+  };
+
     return (
       <View style={styles.container}>
         <DrawingCanvas
@@ -131,6 +158,7 @@ type RootStackParamList = {
           offset={offset}
           setScale={setScale}
           setOffset={setOffset}
+          onImageMenuChange={(show: boolean) => setToolbarVisible(!show)}
         />
 
         <View style={styles.UnReDoContainer}>
@@ -159,17 +187,30 @@ type RootStackParamList = {
           </TouchableOpacity>
         {toolbarVisible && ( 
           <View style={styles.toolbarContainer}>
-          {[
-            { label: 'pen', icon: <Ionicons name="pencil" size={24} color="black" /> },
-            { label: 'eraser', icon: <Entypo name="eraser" size={24} color="black" /> },
-            { label: 'line', icon: <MaterialCommunityIcons name="slash-forward" size={24} color="black" />},
-            { label: 'rectangle', icon: <MaterialCommunityIcons name="rectangle-outline" size={24} color="black" /> },
-            { label: 'oval', icon: <MaterialIcons name="radio-button-unchecked" size={24} color="black" /> },
-          ].map(({ label, icon }) => (
-            <TouchableOpacity key={label} onPress={() => {setTool(label as ShapeType), setToolbarVisible (false)}} style={styles.toolButton}>
-              {icon}
-            </TouchableOpacity>
-          ))}
+        {[
+          { label: 'pen', icon: <Ionicons name="pencil" size={24} color="black" /> },
+          { label: 'eraser', icon: <Entypo name="eraser" size={24} color="black" /> },
+          { label: 'line', icon: <MaterialCommunityIcons name="slash-forward" size={24} color="black" /> },
+          { label: 'rectangle', icon: <MaterialCommunityIcons name="rectangle-outline" size={24} color="black" /> },
+          { label: 'oval', icon: <MaterialIcons name="radio-button-unchecked" size={24} color="black" /> },
+          { label: 'image', icon: <FontAwesome name="image" size={24} color="black" /> },  // ✅ Thêm icon ảnh
+        ].map(({ label, icon }) => (
+          <TouchableOpacity
+            key={label}
+            onPress={() => {
+              if (label === 'image') {
+                handlePickImage(); // ✅ Khi nhấn icon ảnh
+              } else {
+                setTool(label as ExtendedShapeType);
+                setToolbarVisible(false);
+              }
+            }}
+            style={styles.toolButton}
+          >
+            {icon}
+          </TouchableOpacity>
+        ))}
+
           <View style={styles.separator} />
           <View>
           <TouchableOpacity

@@ -1,16 +1,9 @@
 import type { SkPath } from '@shopify/react-native-skia';
 
-export type ShapeType = 'pen' | 'eraser' | 'line' | 'rectangle' | 'oval';
+export type ShapeType = 'pen' | 'eraser' | 'line' | 'rectangle' | 'oval' | 'image';
 
-export type Color =
-  | 'rgba(0,0,0)'
-  | 'rgba(0,0,255)'
-  | 'rgba(0,128,0)'
-  | 'rgba(255,0,0)'
-  | 'rgba(240,240,240)';
-
+export type Color = string;
 export type StrokeWidth = number;
-
 
 export interface Point {
   x: number;
@@ -20,17 +13,26 @@ export interface Point {
 export interface FreehandShape {
   type: 'pen' | 'eraser';
   path: SkPath;
-  points: Point[];  // để lưu các điểm mà pen đi qua rồi chuyển qua json dễ hơn 
+  points: Point[];
+  color: Color;
   strokeWidth: StrokeWidth;
-  color?: Color;
 }
 
-export interface BasicShape  {
-  type: 'rectangle' | 'line' | 'oval';
+export interface StartEndShape {
+  type: 'line' | 'rectangle' | 'oval';
   start: Point;
   end: Point;
+  color: Color;
   strokeWidth: StrokeWidth;
-  color?: Color;
 }
 
-export type Shape = FreehandShape | BasicShape ;
+export interface ImageShape {
+  type: 'image';
+  uri: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export type Shape = FreehandShape | StartEndShape | ImageShape;

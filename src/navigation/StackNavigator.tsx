@@ -8,7 +8,7 @@ import GalleryScreen from '../screens/GalleryScreen';
 import { AuthProvider, useAuth } from '../context/AuthContext'; // tạo ở bước 1
 import { useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert } from 'react-native';
-import DrawingCanvas from '../components/drawingCanvas';
+import DrawingCanvas from '../components/DrawingCanvas';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 // import CreateDrawScreen from '../screens/CreateDrawScreen';
 
