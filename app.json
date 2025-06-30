@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "my-app-name",
-    "slug": "my-app-name",
+    "name": "Drawly",
+    "slug": "drawly-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +25,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "450adc37-bc2b-4a75-ba44-ee3ad6736ffa"
+      }
     }
   }
 }
