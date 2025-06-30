@@ -110,7 +110,7 @@ const GalleryScreen = ({ navigation }: any) => {
   
 
   const renderItem = ({ item }: { item: Draw & { thumbnailUrl: string } }) => {
-    if (!item) return null;
+    if (!item.drawId || !item) return null;
     return (
       <TouchableOpacity
         style={styles.projectBox}
@@ -149,7 +149,7 @@ const GalleryScreen = ({ navigation }: any) => {
       <FlatList
         data={draws}
         renderItem={renderItem}
-        keyExtractor={(item) => item.drawId}
+        keyExtractor={(item, index) => item?.drawId ?? index.toString()}
         numColumns={2}
         contentContainerStyle={styles.grid}
       />
