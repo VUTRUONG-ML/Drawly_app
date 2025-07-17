@@ -37,10 +37,12 @@ const GalleryScreen = ({ navigation }: any) => {
       const fetchDraws = async () => {
         try {
           const fetched = await getDrawsByUser(userId);
-          const formatted = fetched.map((draw: Draw) => ({
-            ...draw,
-            thumbnailUrl: draw.thumbnailUrl || 'https://via.placeholder.com/120',
-          }));
+          const formatted = fetched
+            .filter((draw: Draw) => draw && draw.drawId && draw.drawName)
+            .map((draw: Draw) => ({
+              ...draw,
+              thumbnailUrl: draw.thumbnailUrl || 'https://via.placeholder.com/120',
+            }));
           setDraws(formatted);
         } catch (error) {
           console.error('Lỗi khi lấy danh sách bản vẽ:', error);

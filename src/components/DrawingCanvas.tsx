@@ -233,7 +233,7 @@ const DrawingCanvas = forwardRef(({
         });
         // Debug log
         if (updated.length !== updatedRaw.length) {
-          console.warn('⚠️ Có shape không hợp lệ bị loại bỏ khi lưu:', updatedRaw.filter(s => !updated.includes(s)));
+          console.warn('Có shape không hợp lệ bị loại bỏ khi lưu:', updatedRaw.filter(s => !updated.includes(s)));
         }
         await updateDraw(drawId, updated, null);
         setSavedShapes(updated);

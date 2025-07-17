@@ -68,7 +68,7 @@ type ExtendedShapeType = ShapeType | 'none';
       setCanUndo(canUndo);
       setCanRedo(canRedo);
     }
-  }, 200); // cập nhật mỗi 200ms
+    }, 200); // cập nhật mỗi 200ms
 
   
     if (route.params?.saveRequested) {
