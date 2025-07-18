@@ -9,7 +9,7 @@ export async function saveDraw(
   drawId: string,
   drawName: string,
   drawData: Shape[],
-  imgId: string | null,
+  imgUrl: string[] | null,
 ){
   const drawDocRef = doc(db, 'Draws', drawId);
   const userDocRef = doc(db, 'Users', userId);
@@ -19,7 +19,7 @@ export async function saveDraw(
     drawId,
     drawName,
     drawData: shapeData,
-    imgId: null,
+    imgUrl,
     userId,
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
@@ -37,18 +37,20 @@ export async function saveDraw(
 export async function updateDraw(
   drawId: string,
   drawData: Shape[],
-  imgId: string | null,
+  imageUrls: string[] | null
 ){
   const drawDocRef = doc(db, 'Draws', drawId);
 
   const shapeData = drawData.map(shapeToJSON);
-  await updateDoc(drawDocRef, {
-    drawId,
+  const dataToUpdate: any = {
     drawData: shapeData,
-    imgId: imgId ?? null,
     updatedAt: Timestamp.now(),
-  });
+  };
 
+  if (imageUrls && imageUrls.length > 0) {
+    dataToUpdate.imageUrls = imageUrls;
+  }
+  await updateDoc(drawDocRef, dataToUpdate);
 }
 
 export async function deleteDraw(drawId: string, userId: string) {
@@ -74,11 +76,16 @@ export async function deleteDraw(drawId: string, userId: string) {
 export async function loadDraw(userId: string | null, drawId: string): Promise<Shape[]> {
   const drawDocRef = doc(db, 'Draws', drawId);
   const docSnap = await getDoc(drawDocRef);
-  if (docSnap.exists()) {
+   if (docSnap.exists()) {
     const data = docSnap.data();
+
     if (data.userId === userId) {
       return data.drawData.map(jsonToShape);
+    } else {
+      console.warn("⚠️ userId không khớp.");
     }
+  } else {
+    console.warn("❌ Không tìm thấy bản vẽ với drawId:", drawId);
   }
   return [];
 }

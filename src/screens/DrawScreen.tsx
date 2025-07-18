@@ -14,6 +14,9 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
   import type { RouteProp } from '@react-navigation/native';
   import { pickImage } from '../services/ImagePickerService'; 
   import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { uploadImageToCloudinary } from '../services/cloudinaryService';
+import { loadDraw } from '../services/drawService';
+import { useAuth } from '../context/AuthContext';
 
 type RootStackParamList = {
   Draw: { drawId: string; drawName: string; saveRequested?: boolean };
@@ -25,42 +28,59 @@ type RootStackParamList = {
 
 type ExtendedShapeType = ShapeType | 'none';
 
-  export default function DrawingScreen() {
+export default function DrawingScreen() {
 
-    const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Draw'>>();
-    const [tool, setTool] = useState<ExtendedShapeType>('none');
-    useLayoutEffect(() => {
-      navigation.setOptions({
-        headerTitleAlign: 'center',
-        headerTitle: tool !== 'none' ? () => (
-          <TouchableOpacity
-            onPress={() => {
-              setTool('none');
-              setToolbarVisible(true);
-            }}
-          >
-            <Text style={{ color: '#3399ff', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
-          </TouchableOpacity>
-        ) : '',
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Draw'>>();
+  const [tool, setTool] = useState<ExtendedShapeType>('none');
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitleAlign: 'center',
+      headerTitle: tool !== 'none' ? () => (
+        <TouchableOpacity
+          onPress={() => {
+            setTool('none');
+            setToolbarVisible(true);
+          }}
+        >
+          <Text style={{ color: '#3399ff', fontWeight: 'bold', fontSize: 16 }}>Done</Text>
+        </TouchableOpacity>
+      ) : '',
+    });
+  }, [navigation, tool]);
+  const [scale, setScale] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [strokeWidth, setStrokeWidth] = useState<StrokeWidth>(5);
+  const [color, setColor] = useState<Color>('rgba(0,0,0)');
+  const [strokeModalVisible, setStrokeModalVisible] = useState(false);
+  const [colorModalVisible, setColorModalVisible] = useState(false);
+  const [strokeModalPos, setStrokeModalPos] = useState({ x: 0, y: 0 });
+  const [colorModalPos, setColorModalPos] = useState({ x: 0, y: 0 });
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const [toolbarVisible, setToolbarVisible] = useState(true);
+  const [unredoVisible, setUnredoVisible] = useState(true);
+
+  const [isLoadingImage, setIsLoadingImage] = useState(false);
+  
+  const route = useRoute<RouteProp<RootStackParamList, 'Draw'>>();
+  const canvasRef = useRef<any>(null);
+
+  const { drawId } = route.params;
+  const { userId, loading } = useAuth();
+  useEffect(() => {
+    if (!loading && userId && drawId) {
+      loadDraw(userId, drawId).then(async (shapes) => {
+        for (const shape of shapes) {
+          if (shape.type === 'image') {
+            await canvasRef.current?.addImage?.(shape.uri, shape.x, shape.y);
+          }
+        }
+        canvasRef.current?.setInitialShapes?.(shapes);
       });
-    }, [navigation, tool]);
-    const [scale, setScale] = useState(1);
-    const [offset, setOffset] = useState({ x: 0, y: 0 });
-    const [strokeWidth, setStrokeWidth] = useState<StrokeWidth>(5);
-    const [color, setColor] = useState<Color>('rgba(0,0,0)');
-    const [strokeModalVisible, setStrokeModalVisible] = useState(false);
-    const [colorModalVisible, setColorModalVisible] = useState(false);
-    const [strokeModalPos, setStrokeModalPos] = useState({ x: 0, y: 0 });
-    const [colorModalPos, setColorModalPos] = useState({ x: 0, y: 0 });
-    const [canUndo, setCanUndo] = useState(false);
-    const [canRedo, setCanRedo] = useState(false);
-    const [toolbarVisible, setToolbarVisible] = useState(true);
-    const [unredoVisible, setUnredoVisible] = useState(true);
+    }
+  }, [loading, userId, drawId]);
 
-    
-    const route = useRoute<RouteProp<RootStackParamList, 'Draw'>>();
-    const canvasRef = useRef<any>(null);
-
+  
   useEffect(() => {
     const interval = setInterval(() => {
     if (canvasRef.current?.checkUndoRedoState) {
@@ -141,11 +161,28 @@ type ExtendedShapeType = ShapeType | 'none';
   const colorBtnRef = useRef<any>(null);
 
   const handlePickImage = async () => {
-  const uri = await pickImage();
-  if (uri) {
-    canvasRef.current?.addImage?.(uri); // Giả sử trong DrawingCanvas có hàm addImage
-  }
+    const localUri = await pickImage();
+    if (localUri) {
+      try {
+        setIsLoadingImage(true); // 🔁 Bắt đầu hiển thị loading
+        const cloudUrl = await uploadImageToCloudinary(localUri);
+        if (cloudUrl) {
+          await canvasRef.current?.addImage?.(cloudUrl); // Có await ở đây
+        }
+      } catch (error) {
+        console.error('Lỗi khi tải ảnh lên:', error);
+      } finally {
+        setIsLoadingImage(false); // ✅ Kết thúc loading
+      }
+    }
   };
+
+  useEffect(() => {
+  if (tool !== 'none') {
+    setToolbarVisible(false);
+  }
+}, [tool]);
+
 
     return (
       <View style={styles.container}>
@@ -255,6 +292,12 @@ type ExtendedShapeType = ShapeType | 'none';
           onClose={() => setColorModalVisible(false)}
           position={colorModalPos}
         />
+        {isLoadingImage && (
+          <View style={styles.loadingOverlay}>
+            <Text style={styles.loadingText}>Đang tải ảnh...</Text>
+          </View>
+        )}
+
       </View>
     );
   }
@@ -323,6 +366,21 @@ type ExtendedShapeType = ShapeType | 'none';
     borderRadius: 20,
     elevation: 3,
     zIndex: 100,
-  }
-    
-  });
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+});

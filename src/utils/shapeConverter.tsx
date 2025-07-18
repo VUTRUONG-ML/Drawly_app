@@ -19,6 +19,15 @@ export function shapeToJSON(shape: Shape): any {
       color: shape.color,
       strokeWidth: shape.strokeWidth,
     };
+  } else if (shape.type === 'image') {
+    return {
+      type: 'image',
+      uri: shape.uri,
+      x: shape.x,
+      y: shape.y,
+      width: shape.width,
+      height: shape.height,
+    };
   }
 }
 
@@ -36,7 +45,7 @@ export function jsonToShape(obj: any): Shape {
       color: obj.color,
       strokeWidth: obj.strokeWidth,
     };
-  } else {
+  } else if (obj.type === 'line' || obj.type === 'rectangle' || obj.type === 'oval') {
     return {
       type: obj.type,
       start: obj.start,
@@ -44,5 +53,16 @@ export function jsonToShape(obj: any): Shape {
       color: obj.color,
       strokeWidth: obj.strokeWidth,
     };
+  } else if (obj.type === 'image') {
+    return {
+      type: 'image',
+      uri: obj.uri,
+      x: obj.x,
+      y: obj.y,
+      width: obj.width,
+      height: obj.height,
+    };
+  } else {
+    throw new Error('❌ Unknown shape type: ' + obj.type);
   }
 }
